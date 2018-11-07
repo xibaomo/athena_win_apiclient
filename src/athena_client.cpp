@@ -5,6 +5,7 @@
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "athena_client.h"
 
 #pragma comment (lib,"Ws2_32.lib")
 #pragma comment (lib,"Mswsock.lib")
@@ -13,7 +14,8 @@
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
 
-int __cdecl main(int argc,char** argv)
+extern "C" {
+__declspec(dllexport) int athena_load(float price, int code)
 {
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
@@ -24,11 +26,6 @@ int __cdecl main(int argc,char** argv)
     char recvbuf[DEFAULT_BUFLEN];
     int iResult;
     int recvbuflen = DEFAULT_BUFLEN;
-
-    if (argc !=2) {
-        printf("Usage: %s server-name\n",argv[0]);
-        return 1;
-    }
 
     // Initialize winsock
     iResult = WSAStartup(MAKEWORD(2,2),&wsaData);
@@ -42,7 +39,7 @@ int __cdecl main(int argc,char** argv)
     hints.ai_protocol = IPPROTO_TCP;
 
     //Resolve the server address and port
-    iResult = getaddrinfo(argv[1],DEFAULT_PORT,&hints,&result);
+    iResult = getaddrinfo("192.168.1.102",DEFAULT_PORT,&hints,&result);
     if (iResult!=0){
         printf("getaddrinfo failed with error: %d\n",iResult);
         WSACleanup();
@@ -111,4 +108,5 @@ int __cdecl main(int argc,char** argv)
     WSACleanup();
 
     return 0;
+}
 }
