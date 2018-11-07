@@ -4,6 +4,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
+#include <cstdlib>
 #include <stdio.h>
 #include "athena_client.h"
 
@@ -15,8 +16,12 @@
 #define DEFAULT_PORT "27015"
 
 extern "C" {
-__declspec(dllexport) int athena_load(float price, int code)
+__declspec(dllexport) int athena_load(float price, int code, wchar_t* hostip, wchar_t* port)
 {
+    char cip[16];
+    char cport[16];
+    std::wcstombs(cip,hostip,16);
+    std::wcstombs(cport,port,16);
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
     struct addrinfo *result=NULL,
@@ -39,7 +44,7 @@ __declspec(dllexport) int athena_load(float price, int code)
     hints.ai_protocol = IPPROTO_TCP;
 
     //Resolve the server address and port
-    iResult = getaddrinfo("192.168.1.102",DEFAULT_PORT,&hints,&result);
+    iResult = getaddrinfo(cip,cport,&hints,&result);
     if (iResult!=0){
         printf("getaddrinfo failed with error: %d\n",iResult);
         WSACleanup();
