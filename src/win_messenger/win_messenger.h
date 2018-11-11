@@ -1,8 +1,8 @@
 #ifndef WIN_MESSENGER_H_INCLUDED
 #define WIN_MESSENGER_H_INCLUDED
 #include <cstring>
-#include "common/types.h"
-#include "msg.h"
+#include "basics/types.h"
+#include "basics/msg.h"
 class WinMessenger
 {
 private:
@@ -17,7 +17,9 @@ public:
         return _instance;
     }
 
-    void sendAMsg(Message& msg);
+    void sendAMsgNoFeedback(Message& msg);
+
+    int sendAMsgWaitFeedback(Message& msg);
 };
 
 #endif // WIN_MESSENGER_H_INCLUDED

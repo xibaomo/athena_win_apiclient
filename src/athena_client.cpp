@@ -11,6 +11,7 @@
 #pragma comment (lib,"Ws2_32.lib")
 #pragma comment (lib,"Mswsock.lib")
 #pragma comment (lib,"AdvApi32.lib")
+#pragma comment (lib,"boost_system.lib")
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"

@@ -41,21 +41,27 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
+			<Add directory="src" />
+			<Add directory="C:/boost_1_66_0/include/boost-1_66" />
 		</Compiler>
 		<Linker>
 			<Add library="C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libws2_32.a" />
 			<Add library="C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libmswsock.a" />
 			<Add library="C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libadvapi32.a" />
+			<Add library="C:/boost_1_66_0/lib/libboost_system-mgw81-mt-x64-1_66.a" />
 		</Linker>
 		<Unit filename="src/athena_client.cpp" />
-		<Unit filename="src/athena_client.h">
-			<Option target="Release" />
-			<Option target="Debug" />
-		</Unit>
-		<Unit filename="src/main.cpp">
-			<Option target="Release" />
-			<Option target="Debug" />
-		</Unit>
+		<Unit filename="src/athena_client.h" />
+		<Unit filename="src/basics/log.cpp" />
+		<Unit filename="src/basics/log.h" />
+		<Unit filename="src/basics/msg.h" />
+		<Unit filename="src/basics/types.h" />
+		<Unit filename="src/client_api/athena_client.cpp" />
+		<Unit filename="src/client_api/athena_client.h" />
+		<Unit filename="src/main.cpp" />
+		<Unit filename="src/win_messenger/msg.h" />
+		<Unit filename="src/win_messenger/win_messenger.cpp" />
+		<Unit filename="src/win_messenger/win_messenger.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

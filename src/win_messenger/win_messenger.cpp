@@ -7,29 +7,26 @@
 #include <cstdlib>
 #include <stdio.h>
 
-#pragma comment (lib,"Ws2_32.lib")
-#pragma comment (lib,"Mswsock.lib")
-#pragma comment (lib,"AdvApi32.lib")
-
 #define DEFAULT_BUFLEN 512
 //#define DEFAULT_PORT "27015"
 
 void
-WinMessenger::sendAMsg(Message& msg)
+WinMessenger::sendAMsgNoFeedback(Message& msg)
 {
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
     struct addrinfo *result=NULL,
-                    *ptr = NULL,
-                    hints;
-    char *sendbuf = "this is a test";
+                         *ptr = NULL,
+                          hints;
+    char *sendbuf = (char*)msg.getHead();
     char recvbuf[DEFAULT_BUFLEN];
     int iResult;
     int recvbuflen = DEFAULT_BUFLEN;
 
     // Initialize winsock
     iResult = WSAStartup(MAKEWORD(2,2),&wsaData);
-    if (iResult !=0) {
+    if (iResult !=0)
+    {
         printf("WSAStartup failed with error: %d\n",iResult);
         return;
     }
@@ -40,18 +37,21 @@ WinMessenger::sendAMsg(Message& msg)
 
     //Resolve the server address and port
     iResult = getaddrinfo(m_serverIP.c_str(),m_serverPort.c_str(),&hints,&result);
-    if (iResult!=0){
+    if (iResult!=0)
+    {
         printf("getaddrinfo failed with error: %d\n",iResult);
         WSACleanup();
         return;
     }
 
     // Attempt to connect to an address until one succeeds
-    for (ptr=result; ptr != NULL; ptr=ptr->ai_next) {
+    for (ptr=result; ptr != NULL; ptr=ptr->ai_next)
+    {
         //create a socket for connecting to server
         ConnectSocket = socket(ptr->ai_family,ptr->ai_socktype,
                                ptr->ai_protocol);
-        if (ConnectSocket == INVALID_SOCKET) {
+        if (ConnectSocket == INVALID_SOCKET)
+        {
             printf("socket failed with error: %d\n",WSAGetLastError());
             WSACleanup();
             return;
@@ -59,7 +59,8 @@ WinMessenger::sendAMsg(Message& msg)
 
         // Connect to server
         iResult = connect(ConnectSocket,ptr->ai_addr,(int)ptr->ai_addrlen);
-        if (iResult  == SOCKET_ERROR) {
+        if (iResult  == SOCKET_ERROR)
+        {
             closesocket(ConnectSocket);
             continue;
         }
@@ -67,25 +68,28 @@ WinMessenger::sendAMsg(Message& msg)
     }
     freeaddrinfo(result);
 
-    if (ConnectSocket == INVALID_SOCKET) {
+    if (ConnectSocket == INVALID_SOCKET)
+    {
         printf("Unable to connect to server\n");
         WSACleanup();
         return;
     }
     //send an initial buffer
     iResult = send(ConnectSocket,sendbuf,(int)strlen(sendbuf),0);
-    if (iResult == SOCKET_ERROR) {
+    if (iResult == SOCKET_ERROR)
+    {
         printf("send failed with error: %d\n",WSAGetLastError());
         closesocket(ConnectSocket);
         WSACleanup();
         return;
     }
 
-    printf("Bytes sent: %ld\n",iResult);
+    printf("Bytes sent: %d\n",iResult);
 
     // shutdown the connection since no more data will be sent
     iResult = shutdown(ConnectSocket,SD_SEND);
-    if (iResult == SOCKET_ERROR) {
+    if (iResult == SOCKET_ERROR)
+    {
         printf("shutdown failed with error: %d\n",WSAGetLastError());
         closesocket(ConnectSocket);
         WSACleanup();
@@ -93,7 +97,8 @@ WinMessenger::sendAMsg(Message& msg)
     }
 
     // Receive until the peer closes the connection
-    do {
+    do
+    {
         iResult = recv(ConnectSocket,recvbuf,recvbuflen,0);
         if (iResult > 0)
             printf("Bytes received: %d\n",iResult);
@@ -101,7 +106,8 @@ WinMessenger::sendAMsg(Message& msg)
             printf("Connection closed\n");
         else
             printf("recv failed with error: %d\n",WSAGetLastError());
-    }while(iResult>0);
+    }
+    while(iResult>0);
 
     //cleanup
     closesocket(ConnectSocket);
