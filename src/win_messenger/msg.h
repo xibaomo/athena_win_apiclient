@@ -21,7 +21,7 @@
 #include <cstring>
 #include <malloc.h>
 #include <iostream>
-#include "common/types.h"
+#include "basics/types.h"
 
 typedef unsigned int ActionType;
 typedef int TagType;
@@ -30,8 +30,7 @@ typedef size_t SizeType;
 enum class MsgAction {
     GET_READY = 0,
     NORMAL_EXIT = 1,
-    ERROR_EXIT,
-    CHECK_IN
+    ERROR_EXIT
 };
 
 /*****************************************************************************************

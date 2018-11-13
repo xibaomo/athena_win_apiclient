@@ -50,14 +50,13 @@
 			<Add library="C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libadvapi32.a" />
 			<Add library="C:/boost_1_66_0/lib/libboost_system-mgw81-mt-x64-1_66.a" />
 		</Linker>
-		<Unit filename="src/athena_client.cpp" />
-		<Unit filename="src/athena_client.h" />
 		<Unit filename="src/basics/log.cpp" />
 		<Unit filename="src/basics/log.h" />
 		<Unit filename="src/basics/msg.h" />
 		<Unit filename="src/basics/types.h" />
 		<Unit filename="src/client_api/athena_client.cpp" />
 		<Unit filename="src/client_api/athena_client.h" />
+		<Unit filename="src/client_api/fx_action.h" />
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/win_messenger/msg.h" />
 		<Unit filename="src/win_messenger/win_messenger.cpp" />

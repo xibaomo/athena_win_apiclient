@@ -8,10 +8,16 @@ class WinMessenger
 private:
     String m_serverIP;
     String m_serverPort;
-    WinMessenger(const String& ip, const String& port): m_serverIP(ip),m_serverPort(port){;}
+    WinMessenger(const String& ip, const String& port)
+    {
+        if (ip.size() > 0)
+            m_serverIP = ip;
+        if (port.size() > 0)
+            m_serverPort = port;
+    }
 public:
     virtual ~WinMessenger() {;}
-    static WinMessenger& getInstance(const String& ip, const String& port)
+    static WinMessenger& getInstance(const String& ip = "", const String& port = "")
     {
         static WinMessenger _instance(ip,port);
         return _instance;

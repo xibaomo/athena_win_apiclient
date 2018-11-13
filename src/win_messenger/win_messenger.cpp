@@ -75,7 +75,7 @@ WinMessenger::sendAMsgNoFeedback(Message& msg)
         return;
     }
     //send an initial buffer
-    iResult = send(ConnectSocket,sendbuf,(int)strlen(sendbuf),0);
+    iResult = send(ConnectSocket,(char*)msg.getHead(),(int)msg.getMsgSize(),0);
     if (iResult == SOCKET_ERROR)
     {
         printf("send failed with error: %d\n",WSAGetLastError());

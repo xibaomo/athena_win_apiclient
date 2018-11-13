@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <cstdlib>
 #include <stdio.h>
-#include "athena_client.h"
+#include "athena_client_.h"
 
 #pragma comment (lib,"Ws2_32.lib")
 #pragma comment (lib,"Mswsock.lib")
@@ -28,7 +28,7 @@ __declspec(dllexport) int athena_load(float price, int code, wchar_t* hostip, wc
     struct addrinfo *result=NULL,
                     *ptr = NULL,
                     hints;
-    char *sendbuf = "this is a test";
+    char *sendbuf = (char*)"this is a test";
     char recvbuf[DEFAULT_BUFLEN];
     int iResult;
     int recvbuflen = DEFAULT_BUFLEN;
