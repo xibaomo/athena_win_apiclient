@@ -27,6 +27,7 @@ __declspec(dllexport) int __stdcall athena_init(Real* data, int len, wchar_t* sy
     Message msg(databytes,charbytes);
     memcpy((void*)msg.getData(), (void*)data, databytes);
     msg.setComment(ssymbol);
+    msg.setAction((ActionType)FXAction::HISTORY);
     msger.sendAMsgNoFeedback(msg);
 
     return 0;

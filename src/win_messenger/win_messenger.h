@@ -25,7 +25,11 @@ public:
 
     void sendAMsgNoFeedback(Message& msg);
 
-    int sendAMsgWaitFeedback(Message& msg);
+    /**
+     * Send message to api server and receive feedback
+     */
+    Message sendAMsgWaitFeedback(Message& msg);
+
 };
 
 #endif // WIN_MESSENGER_H_INCLUDED

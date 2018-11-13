@@ -48,8 +48,14 @@
 			<Add library="C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libws2_32.a" />
 			<Add library="C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libmswsock.a" />
 			<Add library="C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libadvapi32.a" />
-			<Add library="C:/boost_1_66_0/lib/libboost_system-mgw81-mt-x64-1_66.a" />
+			<Add library="C:/boost_1_66_0/lib/libboost_log_setup-mgw81-mt-d-x64-1_66.a" />
+			<Add library="C:/boost_1_66_0/lib/libboost_log-mgw81-mt-d-x64-1_66.a" />
+			<Add library="C:/boost_1_66_0/lib/libboost_filesystem-mgw81-mt-d-x64-1_66.a" />
+			<Add library="C:/boost_1_66_0/lib/libboost_system-mgw81-mt-d-x64-1_66.a" />
+			<Add library="C:/boost_1_66_0/lib/libboost_thread-mgw81-mt-d-x64-1_66.a" />
 		</Linker>
+		<Unit filename="src/athena_client_.cpp" />
+		<Unit filename="src/athena_client_.h" />
 		<Unit filename="src/basics/log.cpp" />
 		<Unit filename="src/basics/log.h" />
 		<Unit filename="src/basics/msg.h" />
