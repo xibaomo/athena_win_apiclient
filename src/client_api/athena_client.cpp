@@ -10,6 +10,7 @@
 #include "win_messenger/msg.h"
 #include "win_messenger/win_messenger.h"
 #include "fx_action.h"
+#include "basics/log.h"
 #define DEFAULT_BUFLEN 512
 
 __declspec(dllexport) int __stdcall athena_init(Real* data, int len, wchar_t* symbol, wchar_t* hostip, wchar_t* port)
@@ -33,6 +34,51 @@ __declspec(dllexport) int __stdcall athena_init(Real* data, int len, wchar_t* sy
     return 0;
 }
 
+__declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_type)
+{
+    char posType[16];
+    std::wcstombs(posType,position_type,16);
+    String pos_type = String(posType);
+    auto& msger = WinMessenger::getInstance();
+    int databytes = sizeof(Real);
+    int charbytes = pos_type.size();
+    Message msg(databytes,charbytes);
+    Real* pm = (Real*)msg.getData();
+    pm[0] = price;
+    msg.setComment(pos_type);
+    msg.setAction((ActionType)FXAction::TICK);
+
+    Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
+    FXAction action = (FXAction)msgrecv.getAction();
+    switch(action) {
+    case FXAction::NOACTION:
+        return 0;
+        break;
+    case FXAction::PLACE_BUY:
+        return 1;
+        break;
+    case FXAction::PLACE_SELL:
+        return 2;
+        break;
+    default:
+        Log(LOG_FATAL) << "Unexpected action";
+        break;
+    }
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall athena_finish()
+{
+    Message msg;
+    msg.setAction((ActionType)MsgAction::NORMAL_EXIT);
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+
+    return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port)
 {
     char cip[16];

@@ -3,8 +3,7 @@
 
 enum class FXAction {
     HISTORY = 10,
-    BUY_TICK,
-    SELL_TICK,
+    TICK,
     NOACTION,
     PLACE_BUY,
     PLACE_SELL
