@@ -87,7 +87,7 @@ WinMessenger::sendAMsgNoFeedback(Message& msg)
     printf("Bytes sent: %d\n",iResult);
 
     // shutdown the connection since no more data will be sent
-    iResult = shutdown(ConnectSocket,SD_SEND);
+    //iResult = shutdown(ConnectSocket,SD_SEND);
     if (iResult == SOCKET_ERROR)
     {
         printf("shutdown failed with error: %d\n",WSAGetLastError());
@@ -192,7 +192,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
     printf("Bytes sent: %d\n",iResult);
 
     // shutdown the connection since no more data will be sent
-    iResult = shutdown(ConnectSocket,SD_SEND);
+    //iResult = shutdown(ConnectSocket,SD_SEND);
     if (iResult == SOCKET_ERROR)
     {
         printf("shutdown failed with error: %d\n",WSAGetLastError());
@@ -211,6 +211,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
             Message msg;
             msg.setMsgSize(iResult);
             memcpy((void*)msg.getHead(),(void*)recvbuf,iResult);
+            shutdown(ConnectSocket,SD_SEND);
             return msg;
         }
         else if (iResult == 0)
