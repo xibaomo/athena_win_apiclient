@@ -15,6 +15,6 @@ int main(int argc, char** argv)
 
     float a = 1.66666;
 
-    athena_init(&a,1,symbol,hostip,port);
+    athena_init(symbol,hostip,port);
     return 0;
 }

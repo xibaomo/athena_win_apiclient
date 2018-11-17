@@ -8,10 +8,14 @@ extern "C"
 
 /**
  * Initialize athena client
- * Send history data with given length, FX symbol to api server
- * The models are named as [symbol]_buy(sell).mod
+ * Send FX symbol to api server
  */
-__declspec(dllexport) int __stdcall athena_init(Real* data, int len, wchar_t* symbol, wchar_t* hostip, wchar_t* port);
+__declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip, wchar_t* port);
+
+/**
+ * Send history data to api server
+ */
+__declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_t* pos_type);
 
 /**
  * Classify a tick

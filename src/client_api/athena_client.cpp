@@ -12,32 +12,47 @@
 #include "fx_action.h"
 #include "basics/log.h"
 #define DEFAULT_BUFLEN 512
+#define CHARBUFLEN 16
 
-__declspec(dllexport) int __stdcall athena_init(Real* data, int len, wchar_t* symbol, wchar_t* hostip, wchar_t* port)
+__declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip, wchar_t* port)
 {
-    char cip[16];
-    char cport[16];
-    char csymbol[16];
-    std::wcstombs(cip,hostip,16);
-    std::wcstombs(cport,port,16);
-    std::wcstombs(csymbol,symbol,16);
+    char cip[CHARBUFLEN];
+    char cport[CHARBUFLEN];
+    char csymbol[CHARBUFLEN];
+    std::wcstombs(cip,hostip,CHARBUFLEN);
+    std::wcstombs(cport,port,CHARBUFLEN);
+    std::wcstombs(csymbol,symbol,CHARBUFLEN);
     String ssymbol = String(csymbol);
     auto& msger = WinMessenger::getInstance(String(cip),String(cport));
-    int databytes = len*sizeof(Real);
+    int databytes = 0;
     int charbytes = ssymbol.size();
     Message msg(databytes,charbytes);
-    memcpy((void*)msg.getData(), (void*)data, databytes);
     msg.setComment(ssymbol);
-    msg.setAction((ActionType)FXAction::HISTORY);
+    msg.setAction((ActionType)FXAction::CHECKIN);
     msger.sendAMsgNoFeedback(msg);
 
     return 0;
 }
 
+__declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_t* pos_type)
+{
+    char pt[CHARBUFLEN];
+    std::wcstombs(pt,pos_type,CHARBUFLEN);
+    String posType = String(pt);
+    auto& msger = WinMessenger::getInstance();
+    int databytes = len*sizeof(Real);
+    int charbytes = posType.size();
+    Message msg(databytes,charbytes);
+    memcpy((void*)msg.getData(), (void*)data, databytes);
+    msg.setComment(posType);
+    msg.setAction((ActionType)FXAction::HISTORY);
+    msger.sendAMsgNoFeedback(msg);
+}
+
 __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_type)
 {
-    char posType[16];
-    std::wcstombs(posType,position_type,16);
+    char posType[CHARBUFLEN];
+    std::wcstombs(posType,position_type,CHARBUFLEN);
     String pos_type = String(posType);
     auto& msger = WinMessenger::getInstance();
     int databytes = sizeof(Real);
@@ -81,10 +96,10 @@ __declspec(dllexport) int __stdcall athena_finish()
 /////////////////////////////////////////////////////////////////////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port)
 {
-    char cip[16];
-    char cport[16];
-    std::wcstombs(cip,hostip,16);
-    std::wcstombs(cport,port,16);
+    char cip[CHARBUFLEN];
+    char cport[CHARBUFLEN];
+    std::wcstombs(cip,hostip,CHARBUFLEN);
+    std::wcstombs(cport,port,CHARBUFLEN);
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
     struct addrinfo *result=NULL,
