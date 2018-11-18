@@ -15,14 +15,14 @@ int main(int argc, char** argv)
 
     athena_init(symbol,hostip,port);
 
-//    Real p[500];
-//    for (int i=0;i<500;i++)
-//        p[i] = 1.0;
-//    sendHistoryTicks(p,500,L"buy");
+    Real p[500];
+    for (int i=0;i<500;i++)
+        p[i] = 1.0;
+    sendHistoryTicks(p,500,L"buy");
 
     float pc = 1.666;
     int action=-1;
-    for (int i=0;i<510;i++) {
+    for (int i=0;i<10;i++) {
         action = classifyATick(pc,L"buy");
         printf("action %d\n",action);
     }
