@@ -31,6 +31,7 @@ __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip
     msg.setAction((ActionType)FXAction::CHECKIN);
     msger.sendAMsgNoFeedback(msg);
 
+    Log(LOG_INFO) << "Athena client created";
     return 0;
 }
 
@@ -70,9 +71,11 @@ __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_
         return 0;
         break;
     case FXAction::PLACE_BUY:
+        Log(LOG_INFO) << "Good to open buy position at " + std::to_string(price);
         return 1;
         break;
     case FXAction::PLACE_SELL:
+        Log(LOG_INFO) << "Good to open sell position at " + std::to_string(price);
         return 2;
         break;
     default:
