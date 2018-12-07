@@ -5,6 +5,7 @@ enum class FXAction {
     HISTORY = 10,
     CHECKIN,
     TICK,
+    MINBAR,
     NOACTION,
     PLACE_BUY,
     PLACE_SELL

@@ -85,7 +85,39 @@ __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_
 
     return 0;
 }
+__declspec(dllexport) int __stdcall classifyAMinbar(Real open, Real high, Real low, Real close)
+{
+    auto& msger = WinMessenger::getInstance();
+    int databytes = sizeof(Real)*4;
+    Message msg(databytes,0);
+    Real* pm = (Real*)msg.getData();
+    pm[0] = open;
+    pm[1] = high;
+    pm[2] = low;
+    pm[3] = close;
+    msg.setAction((ActionType)FXAction::MINBAR);
 
+    Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
+    FXAction action = (FXAction)msgrecv.getAction();
+    switch(action) {
+    case FXAction::NOACTION:
+        return 0;
+        break;
+    case FXAction::PLACE_BUY:
+        Log(LOG_INFO) << "Good to open buy position at " + std::to_string(close);
+        return 1;
+        break;
+    case FXAction::PLACE_SELL:
+        Log(LOG_INFO) << "Good to open sell position at " + std::to_string(close);
+        return 2;
+        break;
+    default:
+        Log(LOG_FATAL) << "Unexpected action";
+        break;
+    }
+
+    return 0;
+}
 __declspec(dllexport) int __stdcall athena_finish()
 {
     Message msg;
