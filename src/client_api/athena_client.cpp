@@ -85,7 +85,7 @@ __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_
 
     return 0;
 }
-__declspec(dllexport) int __stdcall classifyAMinbar(Real open, Real high, Real low, Real close)
+__declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close)
 {
     auto& msger = WinMessenger::getInstance();
     int databytes = sizeof(Real)*4;

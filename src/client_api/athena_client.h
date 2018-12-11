@@ -21,6 +21,7 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
  * Classify a tick
  */
 __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_type);
+__declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close);
 
 /**
  * Finalize athena client
