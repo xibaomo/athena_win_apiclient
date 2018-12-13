@@ -15,7 +15,7 @@
 int athena_init(string symbol, string hostip, string port);
 int sendHistoryTicks(float &arr[], int len, string pos_type);
 int classifyATick(float price, string pos_type);
-int classifyAMinBar(float open,float high, float low, float close);
+int classifyAMinBar(float open,float high, float low, float close, float tickvol);
 int athena_finish();
 int test_api_server(string hostip, string port);
 #import
@@ -29,10 +29,11 @@ CAccountInfo   m_account;                    // account info wrapper
 //--- input parameters
 sinput string hostip    = "192.168.1.103";
 sinput string port      = "8888";
-input  double InpLots   = 0.1;
+
 sinput ulong  m_magic   = 2512554564564;
 int    stopProfitPoint = 100;
 int    stopLossPoint   = 100;
+double InpLots   = 0.01;
 //---
 ulong m_slippage = 10;
 long  m_start_time_in_sec = 0;
@@ -97,13 +98,13 @@ void OnTick()
    
    MqlRates rates[1];
    if (CopyRates(Symbol(),PERIOD_M1,1,1,rates) > 0) {
-      PrintFormat("open: %f, high: %f, low: %f, close: %f",
-      rates[0].open,rates[0].high, rates[0].low, rates[0].close);
+      PrintFormat("open: %f, high: %f, low: %f, close: %f, tickvol: %f",
+      rates[0].open,rates[0].high, rates[0].low, rates[0].close, rates[0].tick_volume);
    } else {
       Print("Failed to get the last min bar");
    }
    
-   action = classifyAMinBar(rates[0].open,rates[0].high,rates[0].low,rates[0].close);
+   action = classifyAMinBar(rates[0].open,rates[0].high,rates[0].low,rates[0].close, rates[0].tick_volume);
    if (action == 0) {
       Print("No action");
    } else if (action == 1) {
