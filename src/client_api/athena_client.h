@@ -17,6 +17,8 @@ __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip
  */
 __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_t* pos_type);
 
+__declspec(dllexport) int __stdcall sendHistoryMinBars(Real* data, int len, int n_pts);
+
 /**
  * Classify a tick
  */

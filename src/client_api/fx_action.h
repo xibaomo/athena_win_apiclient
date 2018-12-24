@@ -3,6 +3,7 @@
 
 enum class FXAction {
     HISTORY = 10,
+    HISTORY_MINBAR,
     CHECKIN,
     TICK,
     MINBAR,

@@ -50,6 +50,21 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
     msger.sendAMsgNoFeedback(msg);
 }
 
+__declspec(dllexport) int __stdcall sendHistoryMinBars(Real* data, int len, int n_pts)
+{
+    auto& msger = WinMessenger::getInstance();
+    int databytes = len*n_pts*sizeof(Real);
+    int charbytes = 2*sizeof(int);
+    Message msg(databytes,charbytes);
+    memcpy((void*)msg.getData(),(void*)data,databytes);
+    int *pc = (int*)msg.getChar();
+    pc[0] = len;
+    pc[1] = n_pts;
+    msg.setAction((ActionType)FXAction::HISTORY_MINBAR);
+    msger.sendAMsgNoFeedback(msg);
+    return 0;
+}
+
 __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_type)
 {
     char posType[CHARBUFLEN];
