@@ -35,6 +35,22 @@ __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip
     return 0;
 }
 
+__declspec(dllexport) int __stdcall sendInitTime(wchar_t* timeString)
+{
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,timeString,DEFAULT_BUFLEN);
+    String tstr = String(ts);
+
+    auto& msger = WinMessenger::getInstance();
+    int charbytes = tstr.size();
+    Message msg(0,charbytes);
+    msg.setComment(tstr);
+    msg.setAction((ActionType)FXAction::INIT_TIME);
+    msger.sendAMsgNoFeedback(msg);
+
+    return 0;
+}
+
 __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_t* pos_type)
 {
     char pt[CHARBUFLEN];

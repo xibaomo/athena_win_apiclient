@@ -19,6 +19,8 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
 
 __declspec(dllexport) int __stdcall sendHistoryMinBars(Real* data, int len, int n_pts);
 
+__declspec(dllexport) int __stdcall sendInitTime(wchar_t* timeString);
+
 /**
  * Classify a tick
  */
