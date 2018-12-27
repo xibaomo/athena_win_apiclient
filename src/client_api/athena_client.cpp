@@ -48,6 +48,20 @@ __declspec(dllexport) int __stdcall sendInitTime(wchar_t* timeString)
     msg.setAction((ActionType)FXAction::INIT_TIME);
     msger.sendAMsgNoFeedback(msg);
 
+    Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
+    FXAction action = (FXAction)msgrecv.getAction();
+
+    switch(action) {
+    case FXAction::REQUEST_HISTORY_MINBAR: {
+        int* pm = (int*)msgrecv.getData();
+        int histLen = pm[0];
+        return histLen;
+    }
+        break;
+    default:
+        break;
+    }
+
     return 0;
 }
 

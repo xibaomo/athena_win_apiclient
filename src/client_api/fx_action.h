@@ -10,6 +10,7 @@ enum class FXAction {
     NOACTION,
     PLACE_BUY,
     PLACE_SELL,
-    INIT_TIME
+    INIT_TIME,
+    REQUEST_HISTORY_MINBAR
 };
 #endif // _CLIENT_API_FX_ACTION_H_
