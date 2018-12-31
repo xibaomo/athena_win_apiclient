@@ -46,7 +46,6 @@ __declspec(dllexport) int __stdcall sendInitTime(wchar_t* timeString)
     Message msg(0,charbytes);
     msg.setComment(tstr);
     msg.setAction((ActionType)FXAction::INIT_TIME);
-    msger.sendAMsgNoFeedback(msg);
 
     Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
     FXAction action = (FXAction)msgrecv.getAction();
