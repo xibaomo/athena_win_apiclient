@@ -43,6 +43,7 @@ long  m_start_time_in_sec = 0;
 int OnInit()
   {   
    athena_init(Symbol(),hostip,port);
+   Print("Api server connected");
    
    if (!m_symbol_Base.Name(Symbol())) {
       PrintFormat("Failed to set symbol name: %s",Symbol());
@@ -88,34 +89,41 @@ void OnTick()
    int action=0;
    double ask = m_symbol_Base.Ask();
    if (ask > 0) {
-      PrintFormat("Buy tick: %f",ask);
+      
       static datetime prevBuyTime = TimeCurrent();
       datetime nowBuyTime = TimeCurrent();
       if (nowBuyTime - prevBuyTime < tickInterval)
          return;
-         
-      prevBuyTime = nowBuyTime; 
-      action = classifyATick(ask,"buy");
-      if (action == 1) {
-         OpenBuy(m_symbol_Base);
-      }
       
+      //PrintFormat("Valid Buy tick: %f",ask);
+      prevBuyTime = nowBuyTime; 
+      //action = classifyATick(ask,"buy");
+      
+      action = 0;
+      
+      if (action == 1) {
+         PrintFormat("buy at %f",ask);
+         OpenBuy(m_symbol_Base);
+      }  
    }
    
    double bid = m_symbol_Base.Bid();
    if (bid > 0) {
-      PrintFormat("Sell tick: %f",bid);
       static datetime prevSellTime = TimeCurrent();
       datetime nowSellTime = TimeCurrent();
       if (nowSellTime - prevSellTime < tickInterval)
          return;
          
+      //PrintFormat("Valid Sell tick: %f",bid);
       prevSellTime = nowSellTime;
       action = classifyATick(bid,"sell");
+      
+      //action =0;
+      
       if (action == 2) {
+         PrintFormat("Sell at %f",bid);
          OpenSell(m_symbol_Base);
       }
-      
    }
    
    return;
@@ -307,3 +315,4 @@ void PrintResult(CTrade &trade,CSymbolInfo &symbol)
    DebugBreak();
   }
 //+------------------------------------------------------------------+
+

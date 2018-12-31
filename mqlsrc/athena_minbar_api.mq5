@@ -14,11 +14,15 @@
 #import "athena_win_apiclient.dll"
 int athena_init(string symbol, string hostip, string port);
 int sendHistoryTicks(float &arr[], int len, string pos_type);
+int sendHistoryMinBars(float &arr[], int len, int minbar_size);
+string sendInitTime(string timeString);
 int classifyATick(float price, string pos_type);
 int classifyAMinBar(float open,float high, float low, float close, float tickvol);
 int athena_finish();
 int test_api_server(string hostip, string port);
 #import
+
+#define MINBAR_SIZE 5 
 
 CPositionInfo  m_position;                   // trade position object
 CTrade         m_trade;                      // trading object
@@ -31,8 +35,8 @@ sinput string hostip    = "192.168.1.103";
 sinput string port      = "8888";
 
 sinput ulong  m_magic   = 2512554564564;
-int    stopProfitPoint = 100;
-int    stopLossPoint   = 100;
+int    stopProfitPoint = 200;
+int    stopLossPoint   = 200;
 double InpLots   = 0.01;
 //---
 ulong m_slippage = 10;
@@ -40,7 +44,7 @@ long  m_start_time_in_sec = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
-
+MqlRates lastRate;
 int OnInit()
   {   
    Print("Connecting api server ...");
@@ -56,7 +60,25 @@ int OnInit()
       PrintFormat("Volume value check failed: %s",err_text);
       return (INIT_PARAMETERS_INCORRECT);
    }
+   // send init time to api server
+   MqlRates latestRate[1];
+   if (CopyRates(Symbol(),PERIOD_M1,1,1,latestRate) <= 0) {
+      Print("Failed to get history latest min bar");
+   } 
+   string timestr = TimeToString(latestRate[0].time);
+   PrintFormat("Latest min bar: %s",timestr);
+   string histTimeStr = sendInitTime(timestr);
    
+   datetime histTime = StringToTime(histTimeStr);
+   int histLen = (latestRate[0].time-histTime)/60;
+   PrintFormat("%d min bars are requested.",histLen);
+   PrintFormat("Latest min bar at server: %s",histTimeStr);
+   
+   if (histLen > 0) {
+      histLen = sendPastMinBars(histTime,histLen);
+      PrintFormat("History min bars sent to api server: %d", histLen);
+   }
+
    m_trade.SetExpertMagicNumber(m_magic);
    
    if(IsFillingTypeAllowed(SYMBOL_FILLING_FOK))
@@ -70,6 +92,47 @@ int OnInit()
    
    return(INIT_SUCCEEDED);
   }
+  
+int sendPastMinBars(datetime histTime,int histLen)
+{
+   MqlRates rates[];
+   ArrayResize(rates,histLen);
+   if (CopyRates(Symbol(),PERIOD_M1,1,histLen,rates) <= 0) {
+      Print("Failed to get history min bars");
+   }
+   
+   // find latest min bar at server
+   int k;
+   for (k=0;k<histLen;k++) {
+      if (rates[k].time == histTime)
+      break;
+   }
+   int actualHistLen = histLen - k;
+   int idx=k;
+   float data[];
+   ArrayResize(data,actualHistLen*MINBAR_SIZE);
+   k=0;
+   for (int i=idx+1;i < histLen; i++) {
+      data[k++] = rates[i].open;
+      data[k++] = rates[i].high;
+      data[k++] = rates[i].low;
+      data[k++] = rates[i].close;
+      data[k++] = rates[i].tick_volume;
+   }
+   
+   lastRate = rates[histLen-1];
+   PrintFormat("Latest bar: %f,%f,%f,%f,%f",lastRate.open,lastRate.high,lastRate.low,lastRate.close,lastRate.tick_volume);
+   sendHistoryMinBars(data,actualHistLen,MINBAR_SIZE);
+   
+   string t1 = TimeToString(rates[idx+1].time);
+   string t2 = TimeToString(rates[histLen-1].time);
+   PrintFormat("Min bars sent: %s to %s",t1,t2);
+      
+   ArrayFree(rates);
+   ArrayFree(data);
+   
+   return actualHistLen;
+}
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
@@ -103,6 +166,12 @@ void OnTick()
    } else {
       Print("Failed to get the last min bar");
    }
+   
+   if (rates[0].time==lastRate.time ) {
+      Print("Same as last min bar, skip");
+      return;
+   }
+      
    
    action = classifyAMinBar(rates[0].open,rates[0].high,rates[0].low,rates[0].close, rates[0].tick_volume);
    if (action == 0) {
@@ -323,3 +392,4 @@ void PrintResult(CTrade &trade,CSymbolInfo &symbol)
    DebugBreak();
   }
 //+------------------------------------------------------------------+
+
