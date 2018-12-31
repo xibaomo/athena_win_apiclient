@@ -35,7 +35,7 @@ __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendInitTime(wchar_t* timeString)
+__declspec(dllexport) wchar_t* __stdcall sendInitTime(wchar_t* timeString)
 {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timeString,DEFAULT_BUFLEN);
@@ -54,14 +54,17 @@ __declspec(dllexport) int __stdcall sendInitTime(wchar_t* timeString)
     case FXAction::REQUEST_HISTORY_MINBAR: {
         int* pm = (int*)msgrecv.getData();
         int histLen = pm[0];
-        return histLen;
+        tstr = msgrecv.getComment();
+        wchar_t* rts = new wchar_t[tstr.size()+1];
+        std::mbstowcs(rts,tstr.c_str(),tstr.size()+1);
+        return rts;
     }
         break;
     default:
         break;
     }
 
-    return 0;
+    return NULL;
 }
 
 __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_t* pos_type)
