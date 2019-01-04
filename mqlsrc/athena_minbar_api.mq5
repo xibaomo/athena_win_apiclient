@@ -23,6 +23,8 @@ int test_api_server(string hostip, string port);
 #import
 
 #define MINBAR_SIZE 5 
+#define MAXTRY 2
+#define FIVE_SEC 5000
 
 CPositionInfo  m_position;                   // trade position object
 CTrade         m_trade;                      // trading object
@@ -161,8 +163,9 @@ void OnTick()
    
    MqlRates rates[1];
    if (CopyRates(Symbol(),PERIOD_M1,1,1,rates) > 0) {
-      PrintFormat("open: %f, high: %f, low: %f, close: %f, tickvol: %f",
-      rates[0].open,rates[0].high, rates[0].low, rates[0].close, rates[0].tick_volume);
+      string timestr = TimeToString(rates[0].time);
+      PrintFormat("%s, open: %f, high: %f, low: %f, close: %f, tickvol: %f",
+      timestr,rates[0].open,rates[0].high, rates[0].low, rates[0].close, rates[0].tick_volume);
    } else {
       Print("Failed to get the last min bar");
    }
@@ -283,27 +286,34 @@ void OpenBuy(CSymbolInfo &symbol)
      {
       if(check_volume_lot>=check_open_long_lot)
         {
-         if(m_trade.Buy(check_open_long_lot,NULL,symbol.Ask(),sl,tp))
-           {
-            if(m_trade.ResultDeal()==0)
+        for (int i=0; i < MAXTRY; i++) {
+            PrintFormat("Try buy: %dth",i);
+            if(m_trade.Buy(check_open_long_lot,NULL,symbol.Ask(),sl,tp))
               {
-               Print("#1 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
-                     ", description of result: ",m_trade.ResultRetcodeDescription());
-               PrintResult(m_trade,symbol);
-              }
+               
+               if(m_trade.ResultDeal()==0)
+                 {
+                  Print("#1 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
+                        ", description of result: ",m_trade.ResultRetcodeDescription());
+                  PrintResult(m_trade,symbol);
+                 }
+               else
+                 {
+                  Print("#2 Buy -> true. Result Retcode: ",m_trade.ResultRetcode(),
+                        ", description of result: ",m_trade.ResultRetcodeDescription());
+                  PrintResult(m_trade,symbol);
+                  break;
+                 }
+            }
+           
             else
               {
-               Print("#2 Buy -> true. Result Retcode: ",m_trade.ResultRetcode(),
+               Print("#3 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
                      ", description of result: ",m_trade.ResultRetcodeDescription());
                PrintResult(m_trade,symbol);
               }
-           }
-         else
-           {
-            Print("#3 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
-                  ", description of result: ",m_trade.ResultRetcodeDescription());
-            PrintResult(m_trade,symbol);
-           }
+            Sleep(FIVE_SEC);
+          }
         }
       else
         {
@@ -338,26 +348,32 @@ void OpenSell(CSymbolInfo &symbol)
      {
       if(check_volume_lot>=check_open_short_lot)
         {
-         if(m_trade.Sell(check_open_short_lot,NULL,symbol.Bid(),sl,tp))
-           {
-            if(m_trade.ResultDeal()==0)
+         for (int i=0; i < MAXTRY; i++) {
+            PrintFormat("Try sell: %dth",i);
+            if(m_trade.Sell(check_open_short_lot,NULL,symbol.Bid(),sl,tp))
               {
-               Print("#1 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
-                     ", description of result: ",m_trade.ResultRetcodeDescription());
-               PrintResult(m_trade,symbol);
-              }
+               
+                  if(m_trade.ResultDeal()==0)
+                    {
+                     Print("#1 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
+                           ", description of result: ",m_trade.ResultRetcodeDescription());
+                     PrintResult(m_trade,symbol);
+                    }
+                  else
+                    {
+                     Print("#2 Sell -> true. Result Retcode: ",m_trade.ResultRetcode(),
+                           ", description of result: ",m_trade.ResultRetcodeDescription());
+                     PrintResult(m_trade,symbol);
+                     break;
+                    }
+               }
             else
               {
-               Print("#2 Sell -> true. Result Retcode: ",m_trade.ResultRetcode(),
+               Print("#3 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
                      ", description of result: ",m_trade.ResultRetcodeDescription());
                PrintResult(m_trade,symbol);
               }
-           }
-         else
-           {
-            Print("#3 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
-                  ", description of result: ",m_trade.ResultRetcodeDescription());
-            PrintResult(m_trade,symbol);
+            Sleep(FIVE_SEC);
            }
         }
       else
@@ -392,4 +408,3 @@ void PrintResult(CTrade &trade,CSymbolInfo &symbol)
    DebugBreak();
   }
 //+------------------------------------------------------------------+
-
