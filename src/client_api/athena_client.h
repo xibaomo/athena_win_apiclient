@@ -25,7 +25,7 @@ __declspec(dllexport) wchar_t* __stdcall sendInitTime(wchar_t* timeString);
  * Classify a tick
  */
 __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_type);
-__declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close, Real tickvol);
+__declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close, Real tickvol,wchar_t* timeString);
 
 /**
  * Finalize athena client

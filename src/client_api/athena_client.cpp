@@ -132,17 +132,23 @@ __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_
 
     return 0;
 }
-__declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close, Real tickvol)
+__declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close, Real tickvol,wchar_t* timeString)
 {
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,timeString,DEFAULT_BUFLEN);
+    String tstr = String(ts);
+
     auto& msger = WinMessenger::getInstance();
     int databytes = sizeof(Real)*5;
-    Message msg(databytes,0);
+    int charbytes = tstr.size();
+    Message msg(databytes,charbytes);
     Real* pm = (Real*)msg.getData();
     pm[0] = open;
     pm[1] = high;
     pm[2] = low;
     pm[3] = close;
     pm[4] = tickvol;
+    msg.setComment(tstr);
     msg.setAction((ActionType)FXAction::MINBAR);
 
     Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
