@@ -14,6 +14,17 @@
 #define DEFAULT_BUFLEN 512
 #define CHARBUFLEN 16
 
+static void sendANumber(FXAction action, Real val)
+{
+    Message msg(sizeof(Real),0);
+    Real* pm = (Real*)msg.getData();
+    pm[0] = val;
+    msg.setAction((ActionType)action);
+
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+}
+
 __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip, wchar_t* port)
 {
     char cip[CHARBUFLEN];
@@ -169,6 +180,20 @@ __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real l
         //Log(LOG_FATAL) << "Unexpected action";
         break;
     }
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall sendCurrentProfit(Real profit)
+{
+    sendANumber(FXAction::PROFIT, profit);
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall sendPositionProfit(Real profit)
+{
+    sendANumber(FXAction::CLOSE_POS, profit);
 
     return 0;
 }

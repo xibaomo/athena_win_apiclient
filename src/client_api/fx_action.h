@@ -11,6 +11,8 @@ enum class FXAction {
     PLACE_BUY,
     PLACE_SELL,
     INIT_TIME,
-    REQUEST_HISTORY_MINBAR
+    REQUEST_HISTORY_MINBAR,
+    PROFIT,
+    CLOSE_POS
 };
 #endif // _CLIENT_API_FX_ACTION_H_

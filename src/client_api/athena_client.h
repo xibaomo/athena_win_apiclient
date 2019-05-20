@@ -28,6 +28,16 @@ __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_
 __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close, Real tickvol,wchar_t* timeString);
 
 /**
+ * Send total profit of the current positions
+ */
+__declspec(dllexport) int __stdcall sendCurrentProfit(Real profit);
+
+/**
+ * Send profit of a position just closed
+ */
+__declspec(dllexport) int __stdcall sendPositionProfit(Real profit);
+
+/**
  * Finalize athena client
  * Ask api server to exit
  */

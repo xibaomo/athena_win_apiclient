@@ -202,6 +202,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
     }
 
     // Receive until the peer closes the connection
+    iResult = 0;
     do
     {
         iResult = recv(ConnectSocket,recvbuf,recvbuflen,0);
@@ -219,7 +220,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
         else
             printf("recv failed with error: %d\n",WSAGetLastError());
     }
-    while(iResult>0);
+    while(iResult==0);
 
     //cleanup
     closesocket(ConnectSocket);
