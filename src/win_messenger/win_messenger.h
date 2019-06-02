@@ -2,7 +2,7 @@
 #define WIN_MESSENGER_H_INCLUDED
 #include <cstring>
 #include "basics/types.h"
-#include "basics/msg.h"
+#include "win_messenger/msg.h"
 class WinMessenger
 {
 private:

@@ -13,6 +13,10 @@ enum class FXAction {
     INIT_TIME,
     REQUEST_HISTORY_MINBAR,
     PROFIT,
-    CLOSE_POS
+    CLOSE_POS,
+    ASK_PAIR,
+    PAIR_HIST_X,
+    PAIR_HIST_Y,
+    PAIR_MIN_OPEN
 };
 #endif // _CLIENT_API_FX_ACTION_H_

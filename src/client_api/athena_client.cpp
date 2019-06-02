@@ -6,11 +6,13 @@
 #include <stdlib.h>
 #include <cstdlib>
 #include <stdio.h>
+#include <vector>
 #include "athena_client.h"
 #include "win_messenger/msg.h"
 #include "win_messenger/win_messenger.h"
 #include "fx_action.h"
 #include "basics/log.h"
+#include "basics/utils.h"
 #define DEFAULT_BUFLEN 512
 #define CHARBUFLEN 16
 
@@ -19,10 +21,59 @@ static void sendANumber(FXAction action, Real val)
     Message msg(sizeof(Real),0);
     Real* pm = (Real*)msg.getData();
     pm[0] = val;
-    msg.setAction((ActionType)action);
+    msg.setAction(action);
 
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
+}
+
+static void sendArray(FXAction action, Real* data, int len, int n_pts)
+{
+    auto& msger = WinMessenger::getInstance();
+    int databytes = len*n_pts*sizeof(Real);
+    int charbytes = 2*sizeof(int);
+    Message msg(databytes,charbytes);
+    memcpy((void*)msg.getData(),(void*)data,databytes);
+    int *pc = (int*)msg.getChar();
+    pc[0] = len;
+    pc[1] = n_pts;
+    msg.setAction(action);
+    msger.sendAMsgNoFeedback(msg);
+}
+
+static FXAction sendArrayWaitFeedback(FXAction action, Real* data, int len, int n_pts)
+{
+    auto& msger = WinMessenger::getInstance();
+    int databytes = len*n_pts*sizeof(Real);
+    int charbytes = 2*sizeof(int);
+    Message msg(databytes,charbytes);
+    memcpy((void*)msg.getData(),(void*)data,databytes);
+    int *pc = (int*)msg.getChar();
+    pc[0] = len;
+    pc[1] = n_pts;
+    msg.setAction(action);
+    Message rcv = msger.sendAMsgWaitFeedback(msg);
+
+    return (FXAction)rcv.getAction();
+}
+
+static int action2int(FXAction action)
+{
+    switch(action) {
+    case FXAction::NOACTION:
+        return 0;
+        break;
+    case FXAction::PLACE_BUY:
+        return 1;
+        break;
+    case FXAction::PLACE_SELL:
+        return 2;
+        break;
+    default:
+        break;
+    }
+
+    return -1;
 }
 
 __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip, wchar_t* port)
@@ -95,16 +146,7 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
 
 __declspec(dllexport) int __stdcall sendHistoryMinBars(Real* data, int len, int n_pts)
 {
-    auto& msger = WinMessenger::getInstance();
-    int databytes = len*n_pts*sizeof(Real);
-    int charbytes = 2*sizeof(int);
-    Message msg(databytes,charbytes);
-    memcpy((void*)msg.getData(),(void*)data,databytes);
-    int *pc = (int*)msg.getChar();
-    pc[0] = len;
-    pc[1] = n_pts;
-    msg.setAction((ActionType)FXAction::HISTORY_MINBAR);
-    msger.sendAMsgNoFeedback(msg);
+    sendArray(FXAction::HISTORY_MINBAR,data,len,n_pts);
     return 0;
 }
 
@@ -207,6 +249,45 @@ __declspec(dllexport) int __stdcall athena_finish()
     return 0;
 }
 
+////////////////////////////////////////////////////////////
+////////////////////// Pair trader  ////////////////////////
+////////////////////////////////////////////////////////////
+__declspec(dllexport) const wchar_t* __stdcall askSymPair(int* lrlen)
+{
+    Message msg;
+    msg.setAction(FXAction::ASK_PAIR);
+    auto& msger = WinMessenger::getInstance();
+    Message rcvmsg = msger.sendAMsgWaitFeedback(msg);
+    String cmt = rcvmsg.getComment();
+    std::wstring wstr(cmt.begin(),cmt.end());
+
+    int* pm = (int*)rcvmsg.getData();
+    *lrlen = pm[0];
+    return wstr.c_str();
+}
+
+__declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts)
+{
+    sendArray(FXAction::PAIR_HIST_X,data,len,n_pts);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall sendPairHistY(Real* data, int len, int n_pts)
+{
+    sendArray(FXAction::PAIR_HIST_Y,data,len,n_pts);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall sendMinPair(Real x, Real y)
+{
+    Real data[2];
+    data[0] = x; data[1] = y;
+    FXAction act = sendArrayWaitFeedback(FXAction::PAIR_MIN_OPEN,data,2,1);
+
+    int pc = action2int(act);
+
+    return pc;
+}
 /////////////////////////////////////////////////////////////////////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port)
 {

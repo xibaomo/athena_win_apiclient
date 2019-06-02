@@ -60,7 +60,18 @@ public:
      *                     + size_of_payload
      */
 
+    template <typename T>
+    Message(T action, const size_t dataBytes, const size_t charBytes) : m_entireMsg(nullptr)
+    {
+        init(dataBytes,charBytes);
+        setAction((ActionType)action);
+    }
     Message(const size_t dataBytes = 0, const size_t charBytes = 0) : m_entireMsg(nullptr)
+    {
+        init(dataBytes,charBytes);
+    }
+
+    void init(const size_t dataBytes, const size_t charBytes)
     {
         size_t msgSize = sizeof(SizeType) + sizeof(ActionType) + sizeof(TagType) +
                 sizeof(size_t)*2 + dataBytes + charBytes + sizeof(char)*3;
@@ -204,7 +215,8 @@ public:
 
     void      setAction(ActionType action)  { *getActionPtr() = action; }
 
-    void      setAction(MsgAction action) { setAction((ActionType)action); }
+    template <typename T>
+    void      setAction(T action) { setAction((ActionType)action); }
 
     /**
     * Return the total size of the message

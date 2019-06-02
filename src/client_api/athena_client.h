@@ -43,6 +43,10 @@ __declspec(dllexport) int __stdcall sendPositionProfit(Real profit);
  */
 __declspec(dllexport) int __stdcall athena_finish();
 
+__declspec(dllexport) const wchar_t* __stdcall askSymPair(int* lrlen);
+__declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts);
+__declspec(dllexport) int __stdcall sendPairHistY(Real* data, int len, int n_pts);
+__declspec(dllexport) int __stdcall sendMinPair(Real x, Real y);
 
 //////////////////////// for test purpose ////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port);
