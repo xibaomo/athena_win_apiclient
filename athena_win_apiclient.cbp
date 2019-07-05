@@ -39,7 +39,6 @@
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 			<Add option="-fPIC" />
-			<Add option="-g" />
 			<Add option="-fexceptions" />
 			<Add directory="src" />
 			<Add directory="C:/boost_1_66_0/include/boost-1_66" />
@@ -62,6 +61,7 @@
 		<Unit filename="src/client_api/athena_client.cpp" />
 		<Unit filename="src/client_api/athena_client.h" />
 		<Unit filename="src/client_api/fx_action.h" />
+		<Unit filename="src/client_api/pair_tracker.h" />
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/win_messenger/msg.h" />
 		<Unit filename="src/win_messenger/win_messenger.cpp" />

@@ -7,15 +7,32 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <vector>
+#include <locale>
+#include <codecvt>
 #include "athena_client.h"
 #include "win_messenger/msg.h"
 #include "win_messenger/win_messenger.h"
 #include "fx_action.h"
 #include "basics/log.h"
 #include "basics/utils.h"
+#include "pair_tracker.h"
 #define DEFAULT_BUFLEN 512
 #define CHARBUFLEN 16
+static std::wstring s2ws(const std::string& str)
+{
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
 
+    return converterX.from_bytes(str);
+}
+
+static std::string ws2s(const std::wstring& wstr)
+{
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.to_bytes(wstr);
+}
 static void sendANumber(FXAction action, Real val)
 {
     Message msg(sizeof(Real),0);
@@ -27,34 +44,41 @@ static void sendANumber(FXAction action, Real val)
     msger.sendAMsgNoFeedback(msg);
 }
 
-static void sendArray(FXAction action, Real* data, int len, int n_pts)
+static void sendArray(FXAction action, Real* data, int len, int n_pts, const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
     int databytes = len*n_pts*sizeof(Real);
-    int charbytes = 2*sizeof(int);
+    int charbytes = 2*sizeof(int) + str.size();
     Message msg(databytes,charbytes);
     memcpy((void*)msg.getData(),(void*)data,databytes);
     int *pc = (int*)msg.getChar();
     pc[0] = len;
     pc[1] = n_pts;
     msg.setAction(action);
+    char* pr = (char*)msg.getChar();
+    pr += 2*sizeof(int);
+    memcpy(pr,str.c_str(),str.size());
+
     msger.sendAMsgNoFeedback(msg);
 }
 
-static FXAction sendArrayWaitFeedback(FXAction action, Real* data, int len, int n_pts)
+static Message sendArrayWaitFeedback(FXAction action, Real* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
     int databytes = len*n_pts*sizeof(Real);
-    int charbytes = 2*sizeof(int);
+    int charbytes = 2*sizeof(int) + str.size();
     Message msg(databytes,charbytes);
     memcpy((void*)msg.getData(),(void*)data,databytes);
     int *pc = (int*)msg.getChar();
     pc[0] = len;
     pc[1] = n_pts;
     msg.setAction(action);
+    char* pr = (char*)msg.getChar();
+    pr += 2*sizeof(int);
+    memcpy(pr,str.c_str(),str.size());
     Message rcv = msger.sendAMsgWaitFeedback(msg);
 
-    return (FXAction)rcv.getAction();
+    return rcv;
 }
 
 static int action2int(FXAction action)
@@ -68,6 +92,9 @@ static int action2int(FXAction action)
         break;
     case FXAction::PLACE_SELL:
         return 2;
+        break;
+    case FXAction::CLOSE_ALL_POS:
+        return 3;
         break;
     default:
         break;
@@ -114,8 +141,8 @@ __declspec(dllexport) wchar_t* __stdcall sendInitTime(wchar_t* timeString)
 
     switch(action) {
     case FXAction::REQUEST_HISTORY_MINBAR: {
-        int* pm = (int*)msgrecv.getData();
-        int histLen = pm[0];
+        //int* pm = (int*)msgrecv.getData();
+        //int histLen = pm[0];
         tstr = msgrecv.getComment();
         wchar_t* rts = new wchar_t[tstr.size()+1];
         std::mbstowcs(rts,tstr.c_str(),tstr.size()+1);
@@ -142,6 +169,8 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
     msg.setComment(posType);
     msg.setAction((ActionType)FXAction::HISTORY);
     msger.sendAMsgNoFeedback(msg);
+
+    return 0;
 }
 
 __declspec(dllexport) int __stdcall sendHistoryMinBars(Real* data, int len, int n_pts)
@@ -252,18 +281,17 @@ __declspec(dllexport) int __stdcall athena_finish()
 ////////////////////////////////////////////////////////////
 ////////////////////// Pair trader  ////////////////////////
 ////////////////////////////////////////////////////////////
-__declspec(dllexport) const wchar_t* __stdcall askSymPair(int* lrlen)
+__declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr)
 {
     Message msg;
     msg.setAction(FXAction::ASK_PAIR);
     auto& msger = WinMessenger::getInstance();
     Message rcvmsg = msger.sendAMsgWaitFeedback(msg);
     String cmt = rcvmsg.getComment();
-    std::wstring wstr(cmt.begin(),cmt.end());
 
-    int* pm = (int*)rcvmsg.getData();
-    *lrlen = pm[0];
-    return wstr.c_str();
+    strcpy(c_arr.a, cmt.c_str());
+
+    return 0;
 }
 
 __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts)
@@ -272,22 +300,134 @@ __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendPairHistY(Real* data, int len, int n_pts)
+__declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts)
 {
-    sendArray(FXAction::PAIR_HIST_Y,data,len,n_pts);
-    return 0;
+    Message bm = sendArrayWaitFeedback(FXAction::PAIR_HIST_Y,data,len,n_pts);
+
+    Real* pm = (Real*)bm.getData();
+
+    return pm[0];
 }
 
-__declspec(dllexport) int __stdcall sendMinPair(Real x, Real y)
+__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, Real x, Real y, Real pv, Real point_dollar,Real& hedge_factor)
 {
-    Real data[2];
-    data[0] = x; data[1] = y;
-    FXAction act = sendArrayWaitFeedback(FXAction::PAIR_MIN_OPEN,data,2,1);
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,timeString,DEFAULT_BUFLEN);
+    String tstr = String(ts);
 
+    Real data[4];
+    data[0] = x; data[1] = y;
+    data[2] = pv; data[3] = point_dollar;
+    Message backmsg = sendArrayWaitFeedback(FXAction::PAIR_MIN_OPEN,data,4,1,tstr);
+
+    FXAction act = (FXAction)backmsg.getAction();
     int pc = action2int(act);
+
+    Real* pm = (Real*)backmsg.getData();
+    hedge_factor = pm[0];
 
     return pc;
 }
+
+__declspec(dllexport) int __stdcall __registerPair(long tx, long ty)
+{
+    auto& pair_tracker = PairTracker::getInstance();
+    pair_tracker.addPair(tx,ty);
+
+    Message msg(sizeof(ulong)*2,0);
+    ulong* pm = (ulong*) msg.getData();
+    pm[0] = tx;
+    pm[1] = ty;
+    msg.setAction(FXAction::PAIR_POS_PLACED);
+
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall registerPairStr(CharArray& arr)
+{
+    auto& pair_tracker = PairTracker::getInstance();
+    String tx = String(arr.a);
+    String ty = String(arr.b);
+    pair_tracker.addPair(tx,ty);
+
+    String cmt = tx + "/" + ty;
+
+    Message msg(0,cmt.size());
+    msg.setComment(cmt);
+    msg.setAction(FXAction::PAIR_POS_PLACED);
+
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profit)
+{
+    Message msg(2*sizeof(long),sizeof(Real));
+    long* pm =  (long*)msg.getData();
+    pm[0] = tx;
+    pm[1] = ty;
+    Real* pc = (Real*)msg.getChar();
+    pc[0] = profit;
+
+    msg.setAction(FXAction::PAIR_POS_CLOSED);
+
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, Real profit)
+{
+    String stx = String (arr.a);
+    String sty = String (arr.b);
+    String txy = stx + "/" + sty;
+    Message msg(sizeof(Real),txy.size());
+    Real* pm = (Real*)msg.getData();
+    pm[0] = profit;
+    msg.setComment(txy);
+    msg.setAction(FXAction::PAIR_POS_CLOSED);
+
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+
+    return 0;
+}
+
+__declspec(dllexport) long __stdcall __getPairedTicket(long tx)
+{
+    auto& pair_tracker = PairTracker::getInstance();
+    long ty = pair_tracker.getPairedTicket(tx);
+    return ty;
+}
+
+__declspec(dllexport) int __stdcall getPairedTicketStr(CharArray& arr)
+{
+    auto& pt = PairTracker::getInstance();
+    String tx = String(arr.a);
+    String ty = pt.getPairedTicket(tx);
+
+    strcpy(arr.b,ty.c_str());
+    return 0;
+}
+__declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharArray& c_arr)
+{
+    //char ts[CHARBUFLEN];
+    //std::wcstombs(ts,sym,CHARBUFLEN);
+    String symstr = String(c_arr.a);
+
+    sendArray(FXAction::SYM_HIST_OPEN,data,len,1,symstr);
+
+    return 0;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port)
 {

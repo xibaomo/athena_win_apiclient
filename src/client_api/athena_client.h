@@ -1,11 +1,19 @@
 #ifndef _CLIENT_API_ATHENA_CLIENT_H_
 #define _CLIENT_API_ATHENA_CLIENT_H_
+#define BUFLEN 256
 typedef float Real;
 #ifdef __cplusplus
 extern "C"
 {
 #endif // __cplusplus
 
+struct CharArray {
+    char a[BUFLEN];
+    char b[BUFLEN];
+    char c[BUFLEN];
+};
+
+typedef unsigned long ulong;
 /**
  * Initialize athena client
  * Send FX symbol to api server
@@ -43,11 +51,20 @@ __declspec(dllexport) int __stdcall sendPositionProfit(Real profit);
  */
 __declspec(dllexport) int __stdcall athena_finish();
 
-__declspec(dllexport) const wchar_t* __stdcall askSymPair(int* lrlen);
+/**
+ * API of pair trader
+ */
+__declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr);
 __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts);
-__declspec(dllexport) int __stdcall sendPairHistY(Real* data, int len, int n_pts);
-__declspec(dllexport) int __stdcall sendMinPair(Real x, Real y);
-
+__declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts);
+__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timestr,Real x, Real y, Real point_value, Real point_dollar, Real& hedge_factor);
+__declspec(dllexport) int __stdcall __registerPair(long tx, long ty);
+__declspec(dllexport) int __stdcall registerPairStr(CharArray& arr);
+__declspec(dllexport) long __stdcall __getPairedTicket(long tx);
+__declspec(dllexport) int __stdcall getPairedTicketStr(CharArray& arr);
+__declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharArray& c_arr);
+__declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profit);
+__declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, Real profit);
 //////////////////////// for test purpose ////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port);
 
