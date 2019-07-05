@@ -315,4 +315,3 @@ void PrintResult(CTrade &trade,CSymbolInfo &symbol)
    DebugBreak();
   }
 //+------------------------------------------------------------------+
-
