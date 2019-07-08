@@ -346,12 +346,14 @@ __declspec(dllexport) int __stdcall __registerPair(long tx, long ty)
     return 0;
 }
 
-__declspec(dllexport) int __stdcall registerPairStr(CharArray& arr)
+__declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend)
 {
     auto& pair_tracker = PairTracker::getInstance();
     String tx = String(arr.a);
     String ty = String(arr.b);
     pair_tracker.addPair(tx,ty);
+
+    if (!isSend) return 0;
 
     String cmt = tx + "/" + ty;
 

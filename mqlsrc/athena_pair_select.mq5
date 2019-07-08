@@ -336,6 +336,14 @@ void sendSymHist(string sym, int histLen)
         return;
     }
     
+    datetime ct = TimeCurrent();
+    if (ct - rates[histLen-1].time > 60*60*24*5) {
+      string str = TimeToString(rates[histLen-1].time);
+      string sct = TimeToString(ct);
+      PrintFormat("History outdated: %s, current: %s", str,sct);
+      return;
+    }
+    
     if (ArraySize(rates) < histLen) return;
 
     int actualHistLen = histLen;

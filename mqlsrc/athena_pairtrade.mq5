@@ -27,7 +27,7 @@ float sendPairHistY(float &arr[], int len, int n_pts);
 int sendMinPair(string timestr, float x, float y, float pv, float point_dollar, float& hf);
 
 int classifyAMinBar(float open,float high, float low, float close, float tickvol, string timeString);
-int registerPairStr(CharArray& arr);
+int registerPairStr(CharArray& arr, bool isSend);
 int sendPairProfitStr(CharArray& arr, float profit);
 int getPairedTicketStr(CharArray& arr); // arr.a is tx, arr.b is ty
 int sendCurrentProfit(float profit);
@@ -276,7 +276,7 @@ void OnTick()
       }
       PrintFormat("pair tickets: %d vs %d\n",tx,ty);
 
-      registerPair(tx,ty);
+      registerPair(tx,ty,true);
    }
    if (action == 1) {
       PrintFormat("Sell at %f",m_symbol_Base.Bid());
@@ -302,7 +302,7 @@ void OnTick()
          return;
       }
       PrintFormat("pair tickets: %d vs %d\n",tx,ty);
-      registerPair(tx,ty);
+      registerPair(tx,ty,true);
    }
    
    if (action==3) { // close all positions
@@ -363,18 +363,18 @@ void registerCurrentPositions()
       long idy = StringToInteger(sty);
       
       if(idy <=0) Alert("Weird ticket");
-      //registerPair(idx,idy);
+      registerPair(idx,idy,false);
    }
 }
 
-void registerPair(long tx, long ty)
+void registerPair(long tx, long ty, bool isSend)
 {
       CharArray arr;
       string stmp = IntegerToString(tx);
       StringToCharArray(stmp,arr.a);
       stmp = IntegerToString(ty);
       StringToCharArray(stmp,arr.b);
-      registerPairStr(arr);
+      registerPairStr(arr,isSend);
 }
 
 long getPairedTicket(long tx)

@@ -59,7 +59,7 @@ __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts
 __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts);
 __declspec(dllexport) int __stdcall sendMinPair(wchar_t* timestr,Real x, Real y, Real point_value, Real point_dollar, Real& hedge_factor);
 __declspec(dllexport) int __stdcall __registerPair(long tx, long ty);
-__declspec(dllexport) int __stdcall registerPairStr(CharArray& arr);
+__declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend);
 __declspec(dllexport) long __stdcall __getPairedTicket(long tx);
 __declspec(dllexport) int __stdcall getPairedTicketStr(CharArray& arr);
 __declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharArray& c_arr);
