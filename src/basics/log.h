@@ -33,6 +33,8 @@
 #include <typeinfo>
 #include "types.h"
 
+#define BASE_METHOD_WARN Log(LOG_FATAL) << "Should be implemented in concrete class"
+
 namespace logging = boost::log;
 namespace src = boost::log::sources;
 namespace sinks = boost::log::sinks;
@@ -64,11 +66,11 @@ private:
         m_lvlDict[(int)LogLevel::LOG_DEBUG] = logging::trivial::trace;
 
         logging::register_simple_formatter_factory<logging::trivial::severity_level, char>("Severity");
-        String logName = "athena_pid" + std::to_string(getpid()) + ".log";
-        logging::add_file_log(keywords::file_name = logName.c_str(),
-                              keywords::auto_flush = true,
-                              keywords::format = "[%TimeStamp%][%ProcessID%][%Severity%]: %Message%"
-                              );
+//        String logName = "athena_pid" + std::to_string(getpid()) + ".log";
+//        logging::add_file_log(keywords::file_name = logName.c_str(),
+//                              keywords::auto_flush = true,
+//                              keywords::format = "[%TimeStamp%][%ProcessID%][%Severity%]: %Message%"
+//                              );
 
         logging::add_console_log(std::cout, boost::log::keywords::format = "[%TimeStamp%][%Severity%]: %Message%");
 
