@@ -1,6 +1,6 @@
 #ifndef _CLIENT_API_ATHENA_CLIENT_H_
 #define _CLIENT_API_ATHENA_CLIENT_H_
-#define BUFLEN 256
+#define BUFLEN 512
 typedef float Real;
 #ifdef __cplusplus
 extern "C"
@@ -65,6 +65,13 @@ __declspec(dllexport) int __stdcall getPairedTicketStr(CharArray& arr);
 __declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharArray& c_arr);
 __declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profit);
 __declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, Real profit);
+__declspec(dllexport) int __stdcall reportNumPos(int num);
+
+
+/**
+ * API of multinode arbitrage
+ */
+__declspec(dllexport) int __stdcall sendAllSymOpen(Real* data, int len, CharArray& c_arr);
 //////////////////////// for test purpose ////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port);
 

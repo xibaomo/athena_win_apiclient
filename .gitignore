@@ -18,3 +18,7 @@ Release
 Debug
 test-mails
 train-mails
+*.dll
+*.a
+*.def
+*.ex5

@@ -33,7 +33,7 @@ static std::string ws2s(const std::wstring& wstr)
 
     return converterX.to_bytes(wstr);
 }
-static void sendANumber(FXAction action, Real val)
+static void sendANumber(FXAct action, Real val)
 {
     Message msg(sizeof(Real),0);
     Real* pm = (Real*)msg.getData();
@@ -44,7 +44,7 @@ static void sendANumber(FXAction action, Real val)
     msger.sendAMsgNoFeedback(msg);
 }
 
-static void sendArray(FXAction action, Real* data, int len, int n_pts, const String& str="")
+static void sendArray(FXAct action, Real* data, int len, int n_pts, const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
     int databytes = len*n_pts*sizeof(Real);
@@ -62,7 +62,7 @@ static void sendArray(FXAction action, Real* data, int len, int n_pts, const Str
     msger.sendAMsgNoFeedback(msg);
 }
 
-static Message sendArrayWaitFeedback(FXAction action, Real* data, int len, int n_pts,const String& str="")
+static Message sendArrayWaitFeedback(FXAct action, Real* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
     int databytes = len*n_pts*sizeof(Real);
@@ -81,19 +81,19 @@ static Message sendArrayWaitFeedback(FXAction action, Real* data, int len, int n
     return rcv;
 }
 
-static int action2int(FXAction action)
+static int action2int(FXAct action)
 {
     switch(action) {
-    case FXAction::NOACTION:
+    case FXAct::NOACTION:
         return 0;
         break;
-    case FXAction::PLACE_BUY:
+    case FXAct::PLACE_BUY:
         return 1;
         break;
-    case FXAction::PLACE_SELL:
+    case FXAct::PLACE_SELL:
         return 2;
         break;
-    case FXAction::CLOSE_ALL_POS:
+    case FXAct::CLOSE_ALL_POS:
         return 3;
         break;
     default:
@@ -117,7 +117,7 @@ __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip
     int charbytes = ssymbol.size();
     Message msg(databytes,charbytes);
     msg.setComment(ssymbol);
-    msg.setAction((ActionType)FXAction::CHECKIN);
+    msg.setAction((ActionType)MsgAct::CHECK_IN);
     msger.sendAMsgNoFeedback(msg);
 
     //Log(LOG_INFO) << "Athena client created";
@@ -134,13 +134,13 @@ __declspec(dllexport) wchar_t* __stdcall sendInitTime(wchar_t* timeString)
     int charbytes = tstr.size();
     Message msg(0,charbytes);
     msg.setComment(tstr);
-    msg.setAction((ActionType)FXAction::INIT_TIME);
+    msg.setAction((ActionType)FXAct::INIT_TIME);
 
     Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
-    FXAction action = (FXAction)msgrecv.getAction();
+    FXAct action = (FXAct)msgrecv.getAction();
 
     switch(action) {
-    case FXAction::REQUEST_HISTORY_MINBAR: {
+    case FXAct::REQUEST_HISTORY_MINBAR: {
         //int* pm = (int*)msgrecv.getData();
         //int histLen = pm[0];
         tstr = msgrecv.getComment();
@@ -167,7 +167,7 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
     Message msg(databytes,charbytes);
     memcpy((void*)msg.getData(), (void*)data, databytes);
     msg.setComment(posType);
-    msg.setAction((ActionType)FXAction::HISTORY);
+    msg.setAction((ActionType)FXAct::HISTORY);
     msger.sendAMsgNoFeedback(msg);
 
     return 0;
@@ -175,7 +175,7 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
 
 __declspec(dllexport) int __stdcall sendHistoryMinBars(Real* data, int len, int n_pts)
 {
-    sendArray(FXAction::HISTORY_MINBAR,data,len,n_pts);
+    sendArray(FXAct::HISTORY_MINBAR,data,len,n_pts);
     return 0;
 }
 
@@ -191,19 +191,19 @@ __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_
     Real* pm = (Real*)msg.getData();
     pm[0] = price;
     msg.setComment(pos_type);
-    msg.setAction((ActionType)FXAction::TICK);
+    msg.setAction((ActionType)FXAct::TICK);
 
     Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
-    FXAction action = (FXAction)msgrecv.getAction();
+    FXAct action = (FXAct)msgrecv.getAction();
     switch(action) {
-    case FXAction::NOACTION:
+    case FXAct::NOACTION:
         return 0;
         break;
-    case FXAction::PLACE_BUY:
+    case FXAct::PLACE_BUY:
         //Log(LOG_INFO) << "Good to open buy position at " + std::to_string(price);
         return 1;
         break;
-    case FXAction::PLACE_SELL:
+    case FXAct::PLACE_SELL:
         //Log(LOG_INFO) << "Good to open sell position at " + std::to_string(price);
         return 2;
         break;
@@ -231,19 +231,19 @@ __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real l
     pm[3] = close;
     pm[4] = tickvol;
     msg.setComment(tstr);
-    msg.setAction((ActionType)FXAction::MINBAR);
+    msg.setAction((ActionType)FXAct::MINBAR);
 
     Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
-    FXAction action = (FXAction)msgrecv.getAction();
+    FXAct action = (FXAct)msgrecv.getAction();
     switch(action) {
-    case FXAction::NOACTION:
+    case FXAct::NOACTION:
         return 0;
         break;
-    case FXAction::PLACE_BUY:
+    case FXAct::PLACE_BUY:
         //Log(LOG_INFO) << "Good to open buy position at " + std::to_string(close);
         return 1;
         break;
-    case FXAction::PLACE_SELL:
+    case FXAct::PLACE_SELL:
         //Log(LOG_INFO) << "Good to open sell position at " + std::to_string(close);
         return 2;
         break;
@@ -257,21 +257,21 @@ __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real l
 
 __declspec(dllexport) int __stdcall sendCurrentProfit(Real profit)
 {
-    sendANumber(FXAction::PROFIT, profit);
+    sendANumber(FXAct::PROFIT, profit);
 
     return 0;
 }
 
 __declspec(dllexport) int __stdcall sendPositionProfit(Real profit)
 {
-    sendANumber(FXAction::CLOSE_POS, profit);
+    sendANumber(FXAct::CLOSE_POS, profit);
 
     return 0;
 }
 __declspec(dllexport) int __stdcall athena_finish()
 {
     Message msg;
-    msg.setAction((ActionType)MsgAction::NORMAL_EXIT);
+    msg.setAction((ActionType)MsgAct::NORMAL_EXIT);
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
 
@@ -284,7 +284,7 @@ __declspec(dllexport) int __stdcall athena_finish()
 __declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr)
 {
     Message msg;
-    msg.setAction(FXAction::ASK_PAIR);
+    msg.setAction(FXAct::ASK_PAIR);
     auto& msger = WinMessenger::getInstance();
     Message rcvmsg = msger.sendAMsgWaitFeedback(msg);
     String cmt = rcvmsg.getComment();
@@ -296,13 +296,13 @@ __declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr)
 
 __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts)
 {
-    sendArray(FXAction::PAIR_HIST_X,data,len,n_pts);
+    sendArray(FXAct::PAIR_HIST_X,data,len,n_pts);
     return 0;
 }
 
 __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts)
 {
-    Message bm = sendArrayWaitFeedback(FXAction::PAIR_HIST_Y,data,len,n_pts);
+    Message bm = sendArrayWaitFeedback(FXAct::PAIR_HIST_Y,data,len,n_pts);
 
     Real* pm = (Real*)bm.getData();
 
@@ -318,9 +318,9 @@ __declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, Real x, Rea
     Real data[4];
     data[0] = x; data[1] = y;
     data[2] = pv; data[3] = point_dollar;
-    Message backmsg = sendArrayWaitFeedback(FXAction::PAIR_MIN_OPEN,data,4,1,tstr);
+    Message backmsg = sendArrayWaitFeedback(FXAct::PAIR_MIN_OPEN,data,4,1,tstr);
 
-    FXAction act = (FXAction)backmsg.getAction();
+    FXAct act = (FXAct)backmsg.getAction();
     int pc = action2int(act);
 
     Real* pm = (Real*)backmsg.getData();
@@ -338,7 +338,7 @@ __declspec(dllexport) int __stdcall __registerPair(long tx, long ty)
     ulong* pm = (ulong*) msg.getData();
     pm[0] = tx;
     pm[1] = ty;
-    msg.setAction(FXAction::PAIR_POS_PLACED);
+    msg.setAction(FXAct::PAIR_POS_PLACED);
 
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
@@ -359,7 +359,7 @@ __declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend)
 
     Message msg(0,cmt.size());
     msg.setComment(cmt);
-    msg.setAction(FXAction::PAIR_POS_PLACED);
+    msg.setAction(FXAct::PAIR_POS_PLACED);
 
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
@@ -376,7 +376,7 @@ __declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profi
     Real* pc = (Real*)msg.getChar();
     pc[0] = profit;
 
-    msg.setAction(FXAction::PAIR_POS_CLOSED);
+    msg.setAction(FXAct::PAIR_POS_CLOSED);
 
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
@@ -393,7 +393,7 @@ __declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, Real profi
     Real* pm = (Real*)msg.getData();
     pm[0] = profit;
     msg.setComment(txy);
-    msg.setAction(FXAction::PAIR_POS_CLOSED);
+    msg.setAction(FXAct::PAIR_POS_CLOSED);
 
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
@@ -422,8 +422,36 @@ __declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharA
     //char ts[CHARBUFLEN];
     //std::wcstombs(ts,sym,CHARBUFLEN);
     String symstr = String(c_arr.a);
+    String timestr = String(c_arr.b);
 
-    sendArray(FXAction::SYM_HIST_OPEN,data,len,1,symstr);
+    sendArray(FXAct::SYM_HIST_OPEN,data,len,1,symstr+ " - " + timestr);
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall reportNumPos(int num)
+{
+    sendANumber(FXAct::NUM_POS,(Real)num*1.);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall sendAllSymOpen(Real* data, int len, CharArray& c_arr)
+{
+    // data contains: ask1,bid1,ask2,bid2,...
+    // c_arr.a: sym1,sym2,sym3,...
+    String str(c_arr.a);
+    Message msg(sizeof(Real)*len,str.size());
+    memcpy((void*)msg.getData(),(void*)data, sizeof(Real)*len);
+    msg.setComment(str);
+    msg.setAction(FXAct::ALL_SYM_OPEN);
+
+    auto& msger = WinMessenger::getInstance();
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
+    // backmag contains
+    // syms:action, separated by ','
+
+    String cmt = backmsg.getComment();
+    strcpy(c_arr.b,cmt.c_str());
 
     return 0;
 }

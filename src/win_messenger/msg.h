@@ -22,15 +22,19 @@
 #include <malloc.h>
 #include <iostream>
 #include "basics/types.h"
+#include "basics/log.h"
 
 typedef unsigned int ActionType;
 typedef int TagType;
 typedef size_t SizeType;
 
-enum class MsgAction {
+enum class MsgAct {
     GET_READY = 0,
     NORMAL_EXIT = 1,
-    ERROR_EXIT
+    ERROR_EXIT,
+    CHECK_IN,
+
+    NUM_ACTIONS = 10  // SENTINEL
 };
 
 /*****************************************************************************************
@@ -60,19 +64,7 @@ public:
      *                     + size_of_payload
      */
 
-    template <typename T>
-    Message(T action, const size_t dataBytes, const size_t charBytes) : m_entireMsg(nullptr)
-    {
-        init(dataBytes,charBytes);
-        setAction((ActionType)action);
-    }
-    Message(const size_t dataBytes = 0, const size_t charBytes = 0) : m_entireMsg(nullptr)
-    {
-        init(dataBytes,charBytes);
-    }
-
-    void init(const size_t dataBytes, const size_t charBytes)
-    {
+    void init(size_t dataBytes, size_t charBytes) {
         size_t msgSize = sizeof(SizeType) + sizeof(ActionType) + sizeof(TagType) +
                 sizeof(size_t)*2 + dataBytes + charBytes + sizeof(char)*3;
         m_entireMsg = (Uchar*)malloc(msgSize);
@@ -83,8 +75,19 @@ public:
         m_entireMsg[msgSize-2]='N';
         m_entireMsg[msgSize-1]='D';
 
-        setAction(MsgAction::GET_READY);
+        setAction(MsgAct::GET_READY);
         m_own = true;
+    }
+    Message(const size_t dataBytes = 0, const size_t charBytes = 0) : m_entireMsg(nullptr)
+    {
+        init(dataBytes,charBytes);
+    }
+
+    template <typename T>
+    Message(T action, const size_t dataBytes, const size_t charBytes) : m_entireMsg(nullptr)
+    {
+        init(dataBytes,charBytes);
+        setAction((ActionType)action);
     }
 
     Message(const Message& other)
@@ -116,12 +119,12 @@ public:
     Message(Message&& other)
 
     {
-//        if ( !other.m_own )
-//            Log(LOG_FATAL) << "Cannot transfer ownership if not own it";
+        if ( !other.m_own )
+            Log(LOG_FATAL) << "Cannot transfer ownership if not own it";
 
         if ( !other.m_entireMsg ) {
             m_entireMsg = nullptr;
-//            Log(LOG_FATAL) << "Null msg cannot be moved";
+            Log(LOG_FATAL) << "Null msg cannot be moved";
         }
 
         else {
@@ -135,8 +138,8 @@ public:
 
     Message& operator=(Message&& other)
     {
-//        if ( !other.m_own )
-//            Log(LOG_FATAL) << "Cannot transfer ownership if not own it";
+        if ( !other.m_own )
+            Log(LOG_FATAL) << "Cannot transfer ownership if not own it";
 
         if ( m_own && m_entireMsg )
             free(m_entireMsg);
@@ -212,11 +215,8 @@ public:
     /**
     *  Set the Action
     */
-
-    void      setAction(ActionType action)  { *getActionPtr() = action; }
-
     template <typename T>
-    void      setAction(T action) { setAction((ActionType)action); }
+    void      setAction(T action) { *getActionPtr() = (ActionType)action;}
 
     /**
     * Return the total size of the message
