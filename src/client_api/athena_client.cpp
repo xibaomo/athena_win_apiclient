@@ -353,6 +353,7 @@ __declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend)
     String ty = String(arr.b);
     pair_tracker.addPair(tx,ty);
 
+    std::cout<<"pair registered " << tx << ":" << ty<<std::endl;
     if (!isSend) return 0;
 
     String cmt = tx + "/" + ty;

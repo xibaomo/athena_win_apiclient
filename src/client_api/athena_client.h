@@ -1,6 +1,6 @@
 #ifndef _CLIENT_API_ATHENA_CLIENT_H_
 #define _CLIENT_API_ATHENA_CLIENT_H_
-#define BUFLEN 512
+#define BUFLEN 256
 typedef float Real;
 #ifdef __cplusplus
 extern "C"
