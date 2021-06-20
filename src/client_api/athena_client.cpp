@@ -47,35 +47,50 @@ static void sendANumber(FXAct action, Real val)
 static void sendArray(FXAct action, Real* data, int len, int n_pts, const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
-    int databytes = len*n_pts*sizeof(Real);
-    int charbytes = 2*sizeof(int) + str.size();
-    Message msg(databytes,charbytes);
-    memcpy((void*)msg.getData(),(void*)data,databytes);
-    int *pc = (int*)msg.getChar();
-    pc[0] = len;
-    pc[1] = n_pts;
-    msg.setAction(action);
-    char* pr = (char*)msg.getChar();
-    pr += 2*sizeof(int);
-    memcpy(pr,str.c_str(),str.size());
+//    int databytes = len*n_pts*sizeof(Real);
+//    int charbytes = 2*sizeof(int) + str.size();
+//    Message msg(databytes,charbytes);
+//    memcpy((void*)msg.getData(),(void*)data,databytes);
+//    int *pc = (int*)msg.getChar();
+//    pc[0] = len;
+//    pc[1] = n_pts;
+//    msg.setAction(action);
+//    char* pr = (char*)msg.getChar();
+//    pr += 2*sizeof(int);
+//    memcpy(pr,str.c_str(),str.size());
 
+    SerializePack pack;
+    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.int32_vec.push_back(len);
+    pack.int32_vec.push_back(n_pts);
+    pack.str_vec.push_back(str);
+    String s = serialize(pack);
+    Message msg(action,s);
     msger.sendAMsgNoFeedback(msg);
 }
 
 static Message sendArrayWaitFeedback(FXAct action, Real* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
-    int databytes = len*n_pts*sizeof(Real);
-    int charbytes = 2*sizeof(int) + str.size();
-    Message msg(databytes,charbytes);
-    memcpy((void*)msg.getData(),(void*)data,databytes);
-    int *pc = (int*)msg.getChar();
-    pc[0] = len;
-    pc[1] = n_pts;
-    msg.setAction(action);
-    char* pr = (char*)msg.getChar();
-    pr += 2*sizeof(int);
-    memcpy(pr,str.c_str(),str.size());
+//    int databytes = len*n_pts*sizeof(Real);
+//    int charbytes = 2*sizeof(int) + str.size();
+//    Message msg(databytes,charbytes);
+//    memcpy((void*)msg.getData(),(void*)data,databytes);
+//    int *pc = (int*)msg.getChar();
+//    pc[0] = len;
+//    pc[1] = n_pts;
+//    msg.setAction(action);
+//    char* pr = (char*)msg.getChar();
+//    pr += 2*sizeof(int);
+//    memcpy(pr,str.c_str(),str.size());
+
+    SerializePack pack;
+    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.int32_vec.push_back(len);
+    pack.int32_vec.push_back(n_pts);
+    pack.str_vec.push_back(str);
+    String s = serialize(pack);
+    Message msg(action,s);
     Message rcv = msger.sendAMsgWaitFeedback(msg);
 
     return rcv;

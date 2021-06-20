@@ -21,8 +21,8 @@
 
 #include <vector>
 #include <chrono>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include "basics/log.h"
 #include "types.h"
@@ -59,9 +59,11 @@ public:
 };
 
 struct SerializePack {
+    std::vector<int>   int32_vec;
     std::vector<float> real32_vec;
     std::vector<double> real64_vec;
     std::vector<std::string> str_vec;
+    std::vector<int>   int32_vec1;
     std::vector<float> real32_vec1;
     std::vector<double> real64_vec1;
     std::vector<std::string> str_vec1;
@@ -69,9 +71,11 @@ struct SerializePack {
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
+        ar & int32_vec;
         ar & real32_vec;
         ar & real64_vec;
         ar & str_vec;
+        ar & int32_vec1;
         ar & real32_vec1;
         ar & real64_vec1;
         ar & str_vec1;
@@ -80,14 +84,14 @@ struct SerializePack {
 inline
 std::string serialize(SerializePack& pack) {
     std::stringstream ss;
-    boost::archive::binary_oarchive oa(ss);
+    boost::archive::text_oarchive oa(ss);
     oa << pack;
     return ss.str();
 }
 inline void
 unserialize(const std::string& str, SerializePack& pack) {
     std::stringstream ss(str);
-    boost::archive::binary_iarchive ia(ss);
+    boost::archive::text_iarchive ia(ss);
     ia >> pack;
 }
 #endif   /* ----- #ifndef _BASIC_UTILS_H_  ----- */

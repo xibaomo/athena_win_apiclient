@@ -90,6 +90,12 @@ public:
         setAction((ActionType)action);
     }
 
+    template <typename T>
+    Message (T action, const String& cmt) {
+        init(0,cmt.size());
+        setAction((ActionType)action);
+        setComment(cmt);
+    }
     Message(const Message& other)
     {
         size_t msgSize = other.getMsgSize();
