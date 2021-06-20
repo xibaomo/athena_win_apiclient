@@ -54,10 +54,13 @@
 			<Add library="C:/boost_1_66_0/lib/libboost_filesystem-mgw81-mt-d-x64-1_66.a" />
 			<Add library="C:/boost_1_66_0/lib/libboost_system-mgw81-mt-d-x64-1_66.a" />
 			<Add library="C:/boost_1_66_0/lib/libboost_thread-mgw81-mt-d-x64-1_66.a" />
+			<Add library="C:/boost_1_66_0/lib/libboost_serialization-mgw81-mt-x64-1_66.a" />
 		</Linker>
 		<Unit filename="src/basics/log.cpp" />
 		<Unit filename="src/basics/log.h" />
 		<Unit filename="src/basics/types.h" />
+		<Unit filename="src/basics/utils.cpp" />
+		<Unit filename="src/basics/utils.h" />
 		<Unit filename="src/client_api/athena_client.cpp" />
 		<Unit filename="src/client_api/athena_client.h" />
 		<Unit filename="src/client_api/fx_action.h" />

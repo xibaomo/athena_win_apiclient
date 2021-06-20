@@ -24,6 +24,8 @@ enum class FXAct {
     PAIR_POS_PLACED,
     PAIR_POS_CLOSED,
     NUM_POS,
-    ALL_SYM_OPEN
+    ALL_SYM_OPEN,
+    CLOSE_BUY,
+    CLOSE_SELL
 };
 #endif // _CLIENT_API_FX_ACTION_H_

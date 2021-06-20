@@ -96,6 +96,10 @@ static int action2int(FXAct action)
     case FXAct::CLOSE_ALL_POS:
         return 3;
         break;
+    case FXAct::CLOSE_BUY:
+        return 4;
+    case FXAct::CLOSE_SELL:
+        return 5;
     default:
         break;
     }
@@ -309,15 +313,16 @@ __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pt
     return pm[0];
 }
 
-__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, Real x, Real y, Real pv, Real point_dollar,Real& hedge_factor)
+__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, Real x_ask, Real x_bid,
+                                                Real y_ask, Real y_bid,Real& hedge_factor)
 {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timeString,DEFAULT_BUFLEN);
     String tstr = String(ts);
 
     Real data[4];
-    data[0] = x; data[1] = y;
-    data[2] = pv; data[3] = point_dollar;
+    data[0] = x_ask; data[1] = x_bid;
+    data[2] = y_ask; data[3] = y_bid;
     Message backmsg = sendArrayWaitFeedback(FXAct::PAIR_MIN_OPEN,data,4,1,tstr);
 
     FXAct act = (FXAct)backmsg.getAction();
