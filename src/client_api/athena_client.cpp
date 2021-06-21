@@ -44,21 +44,9 @@ static void sendANumber(FXAct action, Real val)
     msger.sendAMsgNoFeedback(msg);
 }
 
-static void sendArray(FXAct action, Real* data, int len, int n_pts, const String& str="")
+static void sendArray(FXAct action, Real* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
-//    int databytes = len*n_pts*sizeof(Real);
-//    int charbytes = 2*sizeof(int) + str.size();
-//    Message msg(databytes,charbytes);
-//    memcpy((void*)msg.getData(),(void*)data,databytes);
-//    int *pc = (int*)msg.getChar();
-//    pc[0] = len;
-//    pc[1] = n_pts;
-//    msg.setAction(action);
-//    char* pr = (char*)msg.getChar();
-//    pr += 2*sizeof(int);
-//    memcpy(pr,str.c_str(),str.size());
-
     SerializePack pack;
     pack.real32_vec.assign(data,data+len*n_pts);
     pack.int32_vec.push_back(len);
@@ -72,17 +60,6 @@ static void sendArray(FXAct action, Real* data, int len, int n_pts, const String
 static Message sendArrayWaitFeedback(FXAct action, Real* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
-//    int databytes = len*n_pts*sizeof(Real);
-//    int charbytes = 2*sizeof(int) + str.size();
-//    Message msg(databytes,charbytes);
-//    memcpy((void*)msg.getData(),(void*)data,databytes);
-//    int *pc = (int*)msg.getChar();
-//    pc[0] = len;
-//    pc[1] = n_pts;
-//    msg.setAction(action);
-//    char* pr = (char*)msg.getChar();
-//    pr += 2*sizeof(int);
-//    memcpy(pr,str.c_str(),str.size());
 
     SerializePack pack;
     pack.real32_vec.assign(data,data+len*n_pts);
@@ -313,17 +290,36 @@ __declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr)
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts)
+__declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts, double tick_size, double tick_val)
 {
-    sendArray(FXAct::PAIR_HIST_X,data,len,n_pts);
+    auto& msger = WinMessenger::getInstance();
+    SerializePack pack;
+    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.int32_vec.push_back(len);
+    pack.int32_vec.push_back(n_pts);
+    pack.real64_vec.push_back(tick_size);
+    pack.real64_vec.push_back(tick_val);
+    String s = serialize(pack);
+    Message msg(FXAct::PAIR_HIST_X,s);
+    msger.sendAMsgNoFeedback(msg);
     return 0;
 }
 
-__declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts)
+__declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts, double tick_size, double tick_val)
 {
-    Message bm = sendArrayWaitFeedback(FXAct::PAIR_HIST_Y,data,len,n_pts);
+    auto& msger = WinMessenger::getInstance();
 
-    Real* pm = (Real*)bm.getData();
+    SerializePack pack;
+    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.int32_vec.push_back(len);
+    pack.int32_vec.push_back(n_pts);
+    pack.real64_vec.push_back(tick_size);
+    pack.real64_vec.push_back(tick_val);
+    String s = serialize(pack);
+    Message msg(FXAct::PAIR_HIST_Y,s);
+    Message rcv = msger.sendAMsgWaitFeedback(msg);
+
+    Real* pm = (Real*)rcv.getData();
 
     return pm[0];
 }

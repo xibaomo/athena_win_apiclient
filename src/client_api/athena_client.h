@@ -55,8 +55,8 @@ __declspec(dllexport) int __stdcall athena_finish();
  * API of pair trader
  */
 __declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr);
-__declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts);
-__declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts);
+__declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts, double tick_size, double tick_val);
+__declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts, double tick_size, double tick_val);
 __declspec(dllexport) int __stdcall sendMinPair(wchar_t* timestr,Real x_ask, Real x_bid, Real y_ask, Real y_bid, Real& hedge_factor);
 __declspec(dllexport) int __stdcall __registerPair(long tx, long ty);
 __declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend);

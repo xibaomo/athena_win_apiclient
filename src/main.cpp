@@ -22,7 +22,7 @@ int main(int argc, char** argv)
         data[i] = i*1e-3;
     }
 
-    sendPairHistX(data,2000,5);
+   // sendPairHistX(data,2000,5);
 
     delete[] data;
     return 0;
