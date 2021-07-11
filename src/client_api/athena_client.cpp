@@ -264,9 +264,14 @@ __declspec(dllexport) int __stdcall sendPositionProfit(Real profit)
 
     return 0;
 }
+
+__declspec(dllexport) int __stdcall sendAccountBalance(Real balance){
+    sendANumber(FXAct::ACCOUNT_BALANCE,balance);
+    return 0;
+}
 __declspec(dllexport) int __stdcall athena_finish()
 {
-    Message msg;
+    Message msg(1);
     msg.setAction((ActionType)MsgAct::NORMAL_EXIT);
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
@@ -326,7 +331,7 @@ __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pt
 
 __declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, double x_ask, double x_bid, double ticksize_x, double tickval_x,
                                                 double y_ask, double y_bid, double ticksize_y, double tickval_y, int n_pos,
-                                                int ntp, int nsl,
+                                                int ntp, int nsl, double profit,
                                                 double& hedge_factor)
 {
     char ts[DEFAULT_BUFLEN];
@@ -344,6 +349,7 @@ __declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, double x_as
     pack.real64_vec1.push_back(y_bid);
     pack.real64_vec1.push_back(ticksize_y);
     pack.real64_vec1.push_back(tickval_y);
+    pack.real64_vec1.push_back(profit);
 
     pack.int32_vec.push_back(n_pos);
     pack.int32_vec.push_back(ntp);

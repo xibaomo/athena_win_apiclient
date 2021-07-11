@@ -49,6 +49,7 @@ __declspec(dllexport) int __stdcall sendPositionProfit(Real profit);
  * Finalize athena client
  * Ask api server to exit
  */
+__declspec(dllexport) int __stdcall sendAccountBalance(Real balance);
 __declspec(dllexport) int __stdcall athena_finish();
 
 /**
@@ -59,6 +60,7 @@ __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts
 __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts, double tick_size, double tick_val);
 __declspec(dllexport) int __stdcall sendMinPair(wchar_t* timestr,double x_ask, double x_bid, double ticksize_x, double tickval_x,
                                                 double y_ask, double y_bid, double ticksize_y, double tickval_y, int n_pos, int n_tp, int n_sl,
+                                                double profit,
                                                 double& hedge_factor);
 __declspec(dllexport) int __stdcall __registerPair(long tx, long ty);
 __declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend);
