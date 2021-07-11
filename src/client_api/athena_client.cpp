@@ -324,17 +324,36 @@ __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pt
     return pm[0];
 }
 
-__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, Real x_ask, Real x_bid,
-                                                Real y_ask, Real y_bid,Real& hedge_factor)
+__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, double x_ask, double x_bid, double ticksize_x, double tickval_x,
+                                                double y_ask, double y_bid, double ticksize_y, double tickval_y, int n_pos,
+                                                int ntp, int nsl,
+                                                double& hedge_factor)
 {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timeString,DEFAULT_BUFLEN);
     String tstr = String(ts);
 
-    Real data[4];
-    data[0] = x_ask; data[1] = x_bid;
-    data[2] = y_ask; data[3] = y_bid;
-    Message backmsg = sendArrayWaitFeedback(FXAct::PAIR_MIN_OPEN,data,4,1,tstr);
+    SerializePack pack;
+    pack.str_vec.push_back(tstr);
+    pack.real64_vec.push_back(x_ask);
+    pack.real64_vec.push_back(x_bid);
+    pack.real64_vec.push_back(ticksize_x);
+    pack.real64_vec.push_back(tickval_x);
+
+    pack.real64_vec1.push_back(y_ask);
+    pack.real64_vec1.push_back(y_bid);
+    pack.real64_vec1.push_back(ticksize_y);
+    pack.real64_vec1.push_back(tickval_y);
+
+    pack.int32_vec.push_back(n_pos);
+    pack.int32_vec.push_back(ntp);
+    pack.int32_vec.push_back(nsl);
+
+    String cmt = serialize(pack);
+    Message msg(FXAct::PAIR_MIN_OPEN,cmt);
+    auto& msger = WinMessenger::getInstance();
+
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
 
     FXAct act = (FXAct)backmsg.getAction();
     int pc = action2int(act);
@@ -452,6 +471,16 @@ __declspec(dllexport) int __stdcall reportNumPos(int num)
     return 0;
 }
 
+__declspec(dllexport) int __stdcall sendMinPairLabel(int id, int label)
+{
+    Message msg(FXAct::PAIR_LABEL,sizeof(int)*2,0);
+    int* pm = (int*)msg.getData();
+    pm[0] = id;
+    pm[1] = label;
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+    return 0;
+}
 __declspec(dllexport) int __stdcall sendAllSymOpen(Real* data, int len, CharArray& c_arr)
 {
     // data contains: ask1,bid1,ask2,bid2,...

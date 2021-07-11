@@ -57,7 +57,9 @@ __declspec(dllexport) int __stdcall athena_finish();
 __declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr);
 __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts, double tick_size, double tick_val);
 __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts, double tick_size, double tick_val);
-__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timestr,Real x_ask, Real x_bid, Real y_ask, Real y_bid, Real& hedge_factor);
+__declspec(dllexport) int __stdcall sendMinPair(wchar_t* timestr,double x_ask, double x_bid, double ticksize_x, double tickval_x,
+                                                double y_ask, double y_bid, double ticksize_y, double tickval_y, int n_pos, int n_tp, int n_sl,
+                                                double& hedge_factor);
 __declspec(dllexport) int __stdcall __registerPair(long tx, long ty);
 __declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend);
 __declspec(dllexport) long __stdcall __getPairedTicket(long tx);
@@ -66,7 +68,7 @@ __declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharA
 __declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profit);
 __declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, Real profit);
 __declspec(dllexport) int __stdcall reportNumPos(int num);
-
+__declspec(dllexport) int __stdcall sendMinPairLabel(int id, int label); // 0 - buy take profit, 1 - buy stop loss, 2 - sell take profit, 3 - sell stop loss
 
 /**
  * API of multinode arbitrage
