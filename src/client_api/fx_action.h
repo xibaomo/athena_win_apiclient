@@ -28,6 +28,7 @@ enum class FXAct {
     CLOSE_BUY,
     CLOSE_SELL,
     PAIR_LABEL,
-    ACCOUNT_BALANCE
+    ACCOUNT_BALANCE,
+    GET_LOTS
 };
 #endif // _CLIENT_API_FX_ACTION_H_

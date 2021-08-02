@@ -71,6 +71,7 @@ __declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profi
 __declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, Real profit);
 __declspec(dllexport) int __stdcall reportNumPos(int num);
 __declspec(dllexport) int __stdcall sendMinPairLabel(int id, int label); // 0 - buy take profit, 1 - buy stop loss, 2 - sell take profit, 3 - sell stop loss
+__declspec(dllexport) int __stdcall getXYLotSizes(double& lotx, double& loty);
 
 /**
  * API of multinode arbitrage

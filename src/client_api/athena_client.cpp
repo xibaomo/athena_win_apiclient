@@ -487,6 +487,19 @@ __declspec(dllexport) int __stdcall sendMinPairLabel(int id, int label)
     msger.sendAMsgNoFeedback(msg);
     return 0;
 }
+
+__declspec(dllexport) int __stdcall getXYLotSizes(double& lx, double& ly)
+{
+    Message msg(1);
+    msg.setAction(FXAct::GET_LOTS);
+    auto& msger = WinMessenger::getInstance();
+    Message bm = msger.sendAMsgWaitFeedback(msg);
+    double* pm = (double*)bm.getData();
+
+    lx = pm[0];
+    ly = pm[1];
+    return 0;
+}
 __declspec(dllexport) int __stdcall sendAllSymOpen(Real* data, int len, CharArray& c_arr)
 {
     // data contains: ask1,bid1,ask2,bid2,...

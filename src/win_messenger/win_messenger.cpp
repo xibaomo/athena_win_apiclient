@@ -120,6 +120,7 @@ WinMessenger::sendAMsgNoFeedback(Message& msg)
 Message
 WinMessenger::sendAMsgWaitFeedback(Message& msg)
 {
+    Message nullmsg(1);
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
     struct addrinfo *result=NULL,
@@ -134,7 +135,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
     if (iResult !=0)
     {
         printf("WSAStartup failed with error: %d\n",iResult);
-        return -1;
+        return nullmsg;
     }
     ZeroMemory(&hints,sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -147,7 +148,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
     {
         printf("getaddrinfo failed with error: %d\n",iResult);
         WSACleanup();
-        return -1;
+        return nullmsg;
     }
 
     // Attempt to connect to an address until one succeeds
@@ -160,7 +161,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
         {
             printf("socket failed with error: %d\n",WSAGetLastError());
             WSACleanup();
-            return -1;
+            return nullmsg;
         }
 
         // Connect to server
@@ -178,7 +179,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
     {
         printf("Unable to connect to server\n");
         WSACleanup();
-        return -1;
+        return nullmsg;
     }
     //send an initial buffer
     iResult = send(ConnectSocket,(char*)msg.getHead(),(int)msg.getMsgSize(),0);
@@ -187,7 +188,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
         printf("send failed with error: %d\n",WSAGetLastError());
         closesocket(ConnectSocket);
         WSACleanup();
-        return -1;
+        return nullmsg;
     }
 
     printf("Bytes sent: %d\n",iResult);
@@ -199,7 +200,7 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
         printf("shutdown failed with error: %d\n",WSAGetLastError());
         closesocket(ConnectSocket);
         WSACleanup();
-        return -1;
+        return nullmsg;
     }
 
     // Receive until the peer closes the connection
@@ -210,11 +211,13 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
         if (iResult > 0)
         {
             printf("Bytes received: %d\n",iResult);
-            Message msg;
-            msg.setMsgSize(iResult);
-            memcpy((void*)msg.getHead(),(void*)recvbuf,iResult);
+            Message outmsg;
+            outmsg.setMsgSize(iResult);
+            memcpy((void*)outmsg.getHead(),(void*)recvbuf,iResult);
             shutdown(ConnectSocket,SD_SEND);
-            return msg;
+            closesocket(ConnectSocket);
+            WSACleanup();
+            return outmsg;
         }
         else if (iResult == 0)
             printf("Connection closed\n");
@@ -227,5 +230,5 @@ WinMessenger::sendAMsgWaitFeedback(Message& msg)
     closesocket(ConnectSocket);
     WSACleanup();
 
-    return -1;
+    return nullmsg;
 }
