@@ -2,6 +2,7 @@
 #define _CLIENT_API_ATHENA_CLIENT_H_
 #define BUFLEN 256
 typedef float Real;
+typedef double real64;
 #ifdef __cplusplus
 extern "C"
 {
@@ -39,8 +40,8 @@ __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real l
 /**
  * Send the last minbar and current open
  */
-__declspec(dllexport) int __stdcall accumulateMinBar(Real open, Real high, Real low, Real close, Real tickvol,Real new_open, wchar_t* new_time);
-__declspec(dllexport) int __stdcall requestAction();
+__declspec(dllexport) int __stdcall accumulateMinBar(wchar_t* date, wchar_t* time, real64 open, real64 high, real64 low, real64 close, real64 tickvol);
+__declspec(dllexport) int __stdcall requestAction(real64 new_open);
 __declspec(dllexport) int __stdcall registerPosition(unsigned long ticket, wchar_t* time);
 __declspec(dllexport) int __stdcall sendClosedPosInfo(unsigned long ticket, wchar_t* time, double profit);
 

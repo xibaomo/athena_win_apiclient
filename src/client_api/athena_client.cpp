@@ -44,6 +44,12 @@ static void sendANumber(FXAct action, Real val)
     msger.sendAMsgNoFeedback(msg);
 }
 
+static String wchar_t2string(wchar_t* s) {
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,s,DEFAULT_BUFLEN);
+    return String(ts);
+}
+
 static void sendArray(FXAct action, Real* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
@@ -282,34 +288,35 @@ __declspec(dllexport) int __stdcall sendClosedPosInfo(unsigned long ticket, wcha
     return 0;
 }
 
-__declspec(dllexport) int __stdcall accumulateMinBar(Real open, Real high, Real low, Real close, Real tickvol, Real new_open, wchar_t* new_time){
-    char ts[DEFAULT_BUFLEN];
-    std::wcstombs(ts,new_time,DEFAULT_BUFLEN);
-    String tstr = String(ts);
+__declspec(dllexport) int __stdcall accumulateMinBar(wchar_t* date, wchar_t* time, real64 open, real64 high, real64 low, real64 close, real64 tickvol){
+    String dts = wchar_t2string(date);
+    String tms = wchar_t2string(time);
 
     auto& msger = WinMessenger::getInstance();
-    int databytes = sizeof(Real)*6;
-    int charbytes = tstr.size();
-    Message msg(databytes,charbytes);
-    Real* pm = (Real*)msg.getData();
-    pm[0] = open;
-    pm[1] = high;
-    pm[2] = low;
-    pm[3] = close;
-    pm[4] = tickvol;
-    pm[5] = new_open;
-    msg.setComment(tstr);
-    msg.setAction((ActionType)FXAct::LAST_MINBAR);
+
+    SerializePack pack;
+    pack.str_vec.push_back(dts);
+    pack.str_vec.push_back(tms);
+    pack.real64_vec.push_back(open);
+    pack.real64_vec.push_back(high);
+    pack.real64_vec.push_back(low);
+    pack.real64_vec.push_back(close);
+    pack.real64_vec.push_back(tickvol);
+    String cmt = serialize(pack);
+
+    Message msg(FXAct::NEW_MINBAR,cmt);
 
     msger.sendAMsgNoFeedback(msg);
     return 0;
 }
 
-__declspec(dllexport) int __stdcall requestAction() {
+__declspec(dllexport) int __stdcall requestAction(real64 new_open) {
 
     auto& msger = WinMessenger::getInstance();
-    Message msg(1);
+    Message msg(sizeof(real64));
     msg.setAction((ActionType)FXAct::REQUEST_ACT);
+    real64* pm = (real64*)msg.getData();
+    pm[0] = new_open;
 
     Message backmsg = msger.sendAMsgWaitFeedback(msg);
 
