@@ -7,7 +7,8 @@ enum class FXAct {
     HISTORY_MINBAR,
     //CHECKIN,
     TICK,
-    MINBAR,
+    NEW_MINBAR,
+    LAST_MINBAR,
     NOACTION,
     PLACE_BUY,
     PLACE_SELL,
@@ -29,6 +30,9 @@ enum class FXAct {
     CLOSE_SELL,
     PAIR_LABEL,
     ACCOUNT_BALANCE,
-    GET_LOTS
+    GET_LOTS,
+    REQUEST_ACT,
+    REGISTER_POS,
+    CLOSE_POS_INFO
 };
 #endif // _CLIENT_API_FX_ACTION_H_

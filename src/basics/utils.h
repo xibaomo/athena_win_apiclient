@@ -67,6 +67,7 @@ struct SerializePack {
     std::vector<float> real32_vec1;
     std::vector<double> real64_vec1;
     std::vector<std::string> str_vec1;
+    std::vector<unsigned long> ulong_vec;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)

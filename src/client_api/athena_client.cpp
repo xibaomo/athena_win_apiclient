@@ -98,7 +98,9 @@ static int action2int(FXAct action)
 
     return -1;
 }
-
+__declspec(dllexport) int __stdcall athena_test_dll() {
+    return 0;
+}
 __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip, wchar_t* port)
 {
     char cip[CHARBUFLEN];
@@ -227,10 +229,91 @@ __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real l
     pm[3] = close;
     pm[4] = tickvol;
     msg.setComment(tstr);
-    msg.setAction((ActionType)FXAct::MINBAR);
+    msg.setAction((ActionType)FXAct::NEW_MINBAR);
 
     Message msgrecv = std::move(msger.sendAMsgWaitFeedback(msg));
     FXAct action = (FXAct)msgrecv.getAction();
+    switch(action) {
+    case FXAct::NOACTION:
+        return 0;
+        break;
+    case FXAct::PLACE_BUY:
+        //Log(LOG_INFO) << "Good to open buy position at " + std::to_string(close);
+        return 1;
+        break;
+    case FXAct::PLACE_SELL:
+        //Log(LOG_INFO) << "Good to open sell position at " + std::to_string(close);
+        return 2;
+        break;
+    default:
+        //Log(LOG_FATAL) << "Unexpected action";
+        break;
+    }
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall registerPosition(unsigned long ticket, wchar_t* timestamp) {
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
+    String tstr = String(ts);
+
+    Message msg(sizeof(unsigned long),tstr.size());
+    msg.setAction((ActionType)FXAct::REGISTER_POS);
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall sendClosedPosInfo(unsigned long ticket, wchar_t* timestamp, double profit) {
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
+    String tstr = String(ts);
+
+    SerializePack pack;
+    pack.ulong_vec.push_back(ticket);
+    pack.str_vec.push_back(tstr);
+    pack.real64_vec.push_back(profit);
+
+    String cmt = serialize(pack);
+    Message msg(FXAct::CLOSE_POS_INFO,cmt);
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall accumulateMinBar(Real open, Real high, Real low, Real close, Real tickvol, Real new_open, wchar_t* new_time){
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,new_time,DEFAULT_BUFLEN);
+    String tstr = String(ts);
+
+    auto& msger = WinMessenger::getInstance();
+    int databytes = sizeof(Real)*6;
+    int charbytes = tstr.size();
+    Message msg(databytes,charbytes);
+    Real* pm = (Real*)msg.getData();
+    pm[0] = open;
+    pm[1] = high;
+    pm[2] = low;
+    pm[3] = close;
+    pm[4] = tickvol;
+    pm[5] = new_open;
+    msg.setComment(tstr);
+    msg.setAction((ActionType)FXAct::LAST_MINBAR);
+
+    msger.sendAMsgNoFeedback(msg);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall requestAction() {
+
+    auto& msger = WinMessenger::getInstance();
+    Message msg(1);
+    msg.setAction((ActionType)FXAct::REQUEST_ACT);
+
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
+
+    FXAct action = (FXAct)backmsg.getAction();
     switch(action) {
     case FXAct::NOACTION:
         return 0;

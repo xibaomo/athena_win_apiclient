@@ -18,6 +18,7 @@ typedef unsigned long ulong;
  * Initialize athena client
  * Send FX symbol to api server
  */
+__declspec(dllexport) int __stdcall athena_test_dll();
 __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip, wchar_t* port);
 
 /**
@@ -34,6 +35,14 @@ __declspec(dllexport) wchar_t* __stdcall sendInitTime(wchar_t* timeString);
  */
 __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_type);
 __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close, Real tickvol,wchar_t* timeString);
+
+/**
+ * Send the last minbar and current open
+ */
+__declspec(dllexport) int __stdcall accumulateMinBar(Real open, Real high, Real low, Real close, Real tickvol,Real new_open, wchar_t* new_time);
+__declspec(dllexport) int __stdcall requestAction();
+__declspec(dllexport) int __stdcall registerPosition(unsigned long ticket, wchar_t* time);
+__declspec(dllexport) int __stdcall sendClosedPosInfo(unsigned long ticket, wchar_t* time, double profit);
 
 /**
  * Send total profit of the current positions
