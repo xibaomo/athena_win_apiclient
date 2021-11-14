@@ -33,10 +33,10 @@ static std::string ws2s(const std::wstring& wstr)
 
     return converterX.to_bytes(wstr);
 }
-static void sendANumber(FXAct action, Real val)
+static void sendANumber(FXAct action, real64 val)
 {
-    Message msg(sizeof(Real),0);
-    Real* pm = (Real*)msg.getData();
+    Message msg(sizeof(real64),0);
+    real64* pm = (real64*)msg.getData();
     pm[0] = val;
     msg.setAction(action);
 
@@ -50,11 +50,11 @@ static String wchar_t2string(wchar_t* s) {
     return String(ts);
 }
 
-static void sendArray(FXAct action, Real* data, int len, int n_pts,const String& str="")
+static void sendArray(FXAct action, real64* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
     SerializePack pack;
-    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.real64_vec.assign(data,data+len*n_pts);
     pack.int32_vec.push_back(len);
     pack.int32_vec.push_back(n_pts);
     pack.str_vec.push_back(str);
@@ -63,12 +63,12 @@ static void sendArray(FXAct action, Real* data, int len, int n_pts,const String&
     msger.sendAMsgNoFeedback(msg);
 }
 
-static Message sendArrayWaitFeedback(FXAct action, Real* data, int len, int n_pts,const String& str="")
+static Message sendArrayWaitFeedback(FXAct action, real64* data, int len, int n_pts,const String& str="")
 {
     auto& msger = WinMessenger::getInstance();
 
     SerializePack pack;
-    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.real64_vec.assign(data,data+len*n_pts);
     pack.int32_vec.push_back(len);
     pack.int32_vec.push_back(n_pts);
     pack.str_vec.push_back(str);
@@ -160,13 +160,13 @@ __declspec(dllexport) wchar_t* __stdcall sendInitTime(wchar_t* timeString)
     return NULL;
 }
 
-__declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_t* pos_type)
+__declspec(dllexport) int __stdcall sendHistoryTicks(real64* data, int len, wchar_t* pos_type)
 {
     char pt[CHARBUFLEN];
     std::wcstombs(pt,pos_type,CHARBUFLEN);
     String posType = String(pt);
     auto& msger = WinMessenger::getInstance();
-    int databytes = len*sizeof(Real);
+    int databytes = len*sizeof(real64);
     int charbytes = posType.size();
     Message msg(databytes,charbytes);
     memcpy((void*)msg.getData(), (void*)data, databytes);
@@ -177,22 +177,22 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(Real* data, int len, wchar_
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendHistoryMinBars(Real* data, int len, int n_pts)
+__declspec(dllexport) int __stdcall athena_send_history_minbars(real64* data, int len, int n_pts)
 {
     sendArray(FXAct::HISTORY_MINBAR,data,len,n_pts);
     return 0;
 }
 
-__declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_type)
+__declspec(dllexport) int __stdcall classifyATick(real64 price, wchar_t* position_type)
 {
     char posType[CHARBUFLEN];
     std::wcstombs(posType,position_type,CHARBUFLEN);
     String pos_type = String(posType);
     auto& msger = WinMessenger::getInstance();
-    int databytes = sizeof(Real);
+    int databytes = sizeof(real64);
     int charbytes = pos_type.size();
     Message msg(databytes,charbytes);
-    Real* pm = (Real*)msg.getData();
+    real64* pm = (real64*)msg.getData();
     pm[0] = price;
     msg.setComment(pos_type);
     msg.setAction((ActionType)FXAct::TICK);
@@ -218,17 +218,17 @@ __declspec(dllexport) int __stdcall classifyATick(Real price, wchar_t* position_
 
     return 0;
 }
-__declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real low, Real close, Real tickvol,wchar_t* timeString)
+__declspec(dllexport) int __stdcall classifyAMinBar(real64 open, real64 high, real64 low, real64 close, real64 tickvol,wchar_t* timeString)
 {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timeString,DEFAULT_BUFLEN);
     String tstr = String(ts);
 
     auto& msger = WinMessenger::getInstance();
-    int databytes = sizeof(Real)*5;
+    int databytes = sizeof(real64)*5;
     int charbytes = tstr.size();
     Message msg(databytes,charbytes);
-    Real* pm = (Real*)msg.getData();
+    real64* pm = (real64*)msg.getData();
     pm[0] = open;
     pm[1] = high;
     pm[2] = low;
@@ -259,13 +259,17 @@ __declspec(dllexport) int __stdcall classifyAMinBar(Real open, Real high, Real l
     return 0;
 }
 
-__declspec(dllexport) int __stdcall registerPosition(unsigned long ticket, wchar_t* timestamp) {
+__declspec(dllexport) int __stdcall athena_register_position(unsigned long ticket, wchar_t* timestamp) {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
     String tstr = String(ts);
 
     Message msg(sizeof(unsigned long),tstr.size());
     msg.setAction((ActionType)FXAct::REGISTER_POS);
+    unsigned long* pm = (unsigned long*)msg.getData();
+    pm[0] = ticket;
+    msg.setComment(tstr);
+
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
     return 0;
@@ -288,14 +292,12 @@ __declspec(dllexport) int __stdcall sendClosedPosInfo(unsigned long ticket, wcha
     return 0;
 }
 
-__declspec(dllexport) int __stdcall accumulateMinBar(wchar_t* date, wchar_t* time, real64 open, real64 high, real64 low, real64 close, real64 tickvol){
-    String dts = wchar_t2string(date);
-    String tms = wchar_t2string(time);
+__declspec(dllexport) int __stdcall athena_accumulate_minbar(wchar_t* time_str, real64 open, real64 high, real64 low, real64 close, real64 tickvol){
+    String tms = wchar_t2string(time_str);
 
     auto& msger = WinMessenger::getInstance();
 
     SerializePack pack;
-    pack.str_vec.push_back(dts);
     pack.str_vec.push_back(tms);
     pack.real64_vec.push_back(open);
     pack.real64_vec.push_back(high);
@@ -310,7 +312,7 @@ __declspec(dllexport) int __stdcall accumulateMinBar(wchar_t* date, wchar_t* tim
     return 0;
 }
 
-__declspec(dllexport) int __stdcall requestAction(real64 new_open) {
+__declspec(dllexport) int __stdcall athena_request_action(real64 new_open) {
 
     auto& msger = WinMessenger::getInstance();
     Message msg(sizeof(real64));
@@ -341,21 +343,21 @@ __declspec(dllexport) int __stdcall requestAction(real64 new_open) {
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendCurrentProfit(Real profit)
+__declspec(dllexport) int __stdcall sendCurrentProfit(real64 profit)
 {
     sendANumber(FXAct::PROFIT, profit);
 
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendPositionProfit(Real profit)
+__declspec(dllexport) int __stdcall sendPositionProfit(real64 profit)
 {
     sendANumber(FXAct::CLOSE_POS, profit);
 
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendAccountBalance(Real balance){
+__declspec(dllexport) int __stdcall sendAccountBalance(real64 balance){
     sendANumber(FXAct::ACCOUNT_BALANCE,balance);
     return 0;
 }
@@ -385,7 +387,7 @@ __declspec(dllexport) int __stdcall askSymPair(CharArray& c_arr)
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts, double tick_size, double tick_val)
+__declspec(dllexport) int __stdcall sendPairHistX(real64* data, int len, int n_pts, double tick_size, double tick_val)
 {
     auto& msger = WinMessenger::getInstance();
     SerializePack pack;
@@ -400,7 +402,7 @@ __declspec(dllexport) int __stdcall sendPairHistX(Real* data, int len, int n_pts
     return 0;
 }
 
-__declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pts, double tick_size, double tick_val)
+__declspec(dllexport) real64 __stdcall sendPairHistY(real64* data, int len, int n_pts, double tick_size, double tick_val)
 {
     auto& msger = WinMessenger::getInstance();
 
@@ -414,7 +416,7 @@ __declspec(dllexport) Real __stdcall sendPairHistY(Real* data, int len, int n_pt
     Message msg(FXAct::PAIR_HIST_Y,s);
     Message rcv = msger.sendAMsgWaitFeedback(msg);
 
-    Real* pm = (Real*)rcv.getData();
+    real64* pm = (real64*)rcv.getData();
 
     return pm[0];
 }
@@ -454,7 +456,7 @@ __declspec(dllexport) int __stdcall sendMinPair(wchar_t* timeString, double x_as
     FXAct act = (FXAct)backmsg.getAction();
     int pc = action2int(act);
 
-    Real* pm = (Real*)backmsg.getData();
+    real64* pm = (real64*)backmsg.getData();
     hedge_factor = pm[0];
 
     return pc;
@@ -499,13 +501,13 @@ __declspec(dllexport) int __stdcall registerPairStr(CharArray& arr, bool isSend)
     return 0;
 }
 
-__declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profit)
+__declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, real64 profit)
 {
-    Message msg(2*sizeof(long),sizeof(Real));
+    Message msg(2*sizeof(long),sizeof(real64));
     long* pm =  (long*)msg.getData();
     pm[0] = tx;
     pm[1] = ty;
-    Real* pc = (Real*)msg.getChar();
+    real64* pc = (real64*)msg.getChar();
     pc[0] = profit;
 
     msg.setAction(FXAct::PAIR_POS_CLOSED);
@@ -516,13 +518,13 @@ __declspec(dllexport) int __stdcall __sendPairProfit(long tx,long ty, Real profi
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, Real profit)
+__declspec(dllexport) int __stdcall sendPairProfitStr(CharArray& arr, real64 profit)
 {
     String stx = String (arr.a);
     String sty = String (arr.b);
     String txy = stx + "/" + sty;
-    Message msg(sizeof(Real),txy.size());
-    Real* pm = (Real*)msg.getData();
+    Message msg(sizeof(real64),txy.size());
+    real64* pm = (real64*)msg.getData();
     pm[0] = profit;
     msg.setComment(txy);
     msg.setAction(FXAct::PAIR_POS_CLOSED);
@@ -549,7 +551,7 @@ __declspec(dllexport) int __stdcall getPairedTicketStr(CharArray& arr)
     strcpy(arr.b,ty.c_str());
     return 0;
 }
-__declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharArray& c_arr)
+__declspec(dllexport) int __stdcall sendSymbolHistory(real64* data, int len, CharArray& c_arr)
 {
     //char ts[CHARBUFLEN];
     //std::wcstombs(ts,sym,CHARBUFLEN);
@@ -563,7 +565,7 @@ __declspec(dllexport) int __stdcall sendSymbolHistory(Real* data, int len, CharA
 
 __declspec(dllexport) int __stdcall reportNumPos(int num)
 {
-    sendANumber(FXAct::NUM_POS,(Real)num*1.);
+    sendANumber(FXAct::NUM_POS,(real64)num*1.);
     return 0;
 }
 
@@ -590,13 +592,13 @@ __declspec(dllexport) int __stdcall getXYLotSizes(double& lx, double& ly)
     ly = pm[1];
     return 0;
 }
-__declspec(dllexport) int __stdcall sendAllSymOpen(Real* data, int len, CharArray& c_arr)
+__declspec(dllexport) int __stdcall sendAllSymOpen(real64* data, int len, CharArray& c_arr)
 {
     // data contains: ask1,bid1,ask2,bid2,...
     // c_arr.a: sym1,sym2,sym3,...
     String str(c_arr.a);
-    Message msg(sizeof(Real)*len,str.size());
-    memcpy((void*)msg.getData(),(void*)data, sizeof(Real)*len);
+    Message msg(sizeof(real64)*len,str.size());
+    memcpy((void*)msg.getData(),(void*)data, sizeof(real64)*len);
     msg.setComment(str);
     msg.setAction(FXAct::ALL_SYM_OPEN);
 

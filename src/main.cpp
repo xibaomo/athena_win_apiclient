@@ -17,7 +17,7 @@ int main(int argc, char** argv)
     athena_init(symbol,hostip,port);
 
 
-    Real* data = new Real[N];
+    real64* data = new real64[N];
     for (int i=0; i < N; i++) {
         data[i] = i*1e-3;
     }
