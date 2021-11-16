@@ -80,6 +80,7 @@ struct SerializePack {
         ar & real32_vec1;
         ar & real64_vec1;
         ar & str_vec1;
+        ar & ulong_vec;
     }
 };
 inline

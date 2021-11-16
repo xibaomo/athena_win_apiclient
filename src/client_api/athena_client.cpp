@@ -177,9 +177,9 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(real64* data, int len, wcha
     return 0;
 }
 
-__declspec(dllexport) int __stdcall athena_send_history_minbars(real64* data, int len, int n_pts)
+__declspec(dllexport) int __stdcall athena_send_history_minbars(real64* data, int nbars, int bar_size)
 {
-    sendArray(FXAct::HISTORY_MINBAR,data,len,n_pts);
+    sendArray(FXAct::HISTORY_MINBAR,data,nbars,bar_size);
     return 0;
 }
 
@@ -275,7 +275,7 @@ __declspec(dllexport) int __stdcall athena_register_position(unsigned long ticke
     return 0;
 }
 
-__declspec(dllexport) int __stdcall sendClosedPosInfo(unsigned long ticket, wchar_t* timestamp, double profit) {
+__declspec(dllexport) int __stdcall athena_send_closed_position_info(unsigned long ticket, wchar_t* timestamp, double profit) {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
     String tstr = String(ts);
