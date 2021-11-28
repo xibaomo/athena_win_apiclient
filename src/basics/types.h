@@ -28,5 +28,6 @@ typedef unsigned char Uchar;
 typedef float real32;
 typedef double real64;
 using String = std::string;
+typedef unsigned __int64 mt5ulong;
 
 #endif   /* ----- #ifndef _BASICS_TYPES_H_  ----- */
