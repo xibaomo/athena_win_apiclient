@@ -7,13 +7,16 @@
 #include <stdlib.h>
 #include <cstdlib>
 #include <stdio.h>
-
+#include <string>
+using namespace std;
 #define DEFAULT_BUFLEN 512
 //#define DEFAULT_PORT "27015"
 
+const std::string ACK_STR = "ROGER_THAT";
 void
 WinMsgerShort::sendAMsgNoFeedback(Message& msg)
 {
+    msg.setNoQuery();
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
     struct addrinfo *result=NULL,
@@ -101,14 +104,17 @@ WinMsgerShort::sendAMsgNoFeedback(Message& msg)
     do
     {
         iResult = recv(ConnectSocket,recvbuf,recvbuflen,0);
-        if (iResult > 0)
+        if (iResult > 0) {
             printf("Bytes received: %d\n",iResult);
+            string s(recvbuf,iResult);
+            if (s == ACK_STR) break;
+        }
         else if (iResult == 0)
             printf("Connection closed\n");
         else
             printf("recv failed with error: %d\n",WSAGetLastError());
     }
-    while(iResult>0);
+    while(iResult==0);
 
     //cleanup
     closesocket(ConnectSocket);
@@ -120,6 +126,7 @@ WinMsgerShort::sendAMsgNoFeedback(Message& msg)
 Message
 WinMsgerShort::sendAMsgWaitFeedback(Message& msg)
 {
+    msg.setQuery();
     Message nullmsg(1);
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;

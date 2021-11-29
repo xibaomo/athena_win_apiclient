@@ -22,7 +22,7 @@ WinMsgerLong::~WinMsgerLong() {
 void
 WinMsgerLong::sendAMsgNoFeedback(Message& msg)
 {
-    msg.setAck();
+    msg.setNoQuery();
     if (m_sock < 0) {
         m_sock = connectAddr(m_serverIP,m_serverPort);
     }
@@ -65,7 +65,7 @@ WinMsgerLong::sendAMsgNoFeedback(Message& msg)
 Message
 WinMsgerLong::sendAMsgWaitFeedback(Message& msg)
 {
-    msg.setNoAck();
+    msg.setQuery();
     Message nullmsg(1);
     if (m_sock < 0) {
         m_sock = connectAddr(m_serverIP,m_serverPort);

@@ -73,6 +73,10 @@
 		</Unit>
 		<Unit filename="src/win_messenger/win_msger_short.cpp" />
 		<Unit filename="src/win_messenger/win_msger_short.h" />
+		<Unit filename="src/win_messenger/win_sock_utils.cpp" />
+		<Unit filename="src/win_messenger/win_sock_utils.h">
+			<Option target="libathena_client" />
+		</Unit>
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>
