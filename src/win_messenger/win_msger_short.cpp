@@ -1,5 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
-#include "win_messenger.h"
+#include "win_messenger/win_msger_short.h"
 #include "basics/utils.h"
 #include <windows.h>
 #include <winsock2.h>
@@ -12,7 +12,7 @@
 //#define DEFAULT_PORT "27015"
 
 void
-WinMessenger::sendAMsgNoFeedback(Message& msg)
+WinMsgerShort::sendAMsgNoFeedback(Message& msg)
 {
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
@@ -118,7 +118,7 @@ WinMessenger::sendAMsgNoFeedback(Message& msg)
 }
 
 Message
-WinMessenger::sendAMsgWaitFeedback(Message& msg)
+WinMsgerShort::sendAMsgWaitFeedback(Message& msg)
 {
     Message nullmsg(1);
     WSADATA wsaData;

@@ -3,12 +3,12 @@
 #include <cstring>
 #include "basics/types.h"
 #include "win_messenger/msg.h"
-class WinMessenger
+class WinMsgerShort
 {
 private:
     String m_serverIP;
     String m_serverPort;
-    WinMessenger(const String& ip, const String& port)
+    WinMsgerShort(const String& ip, const String& port)
     {
         if (ip.size() > 0)
             m_serverIP = ip;
@@ -16,10 +16,10 @@ private:
             m_serverPort = port;
     }
 public:
-    virtual ~WinMessenger() {;}
-    static WinMessenger& getInstance(const String& ip = "", const String& port = "")
+    virtual ~WinMsgerShort() {;}
+    static WinMsgerShort& getInstance(const String& ip = "", const String& port = "")
     {
-        static WinMessenger _instance(ip,port);
+        static WinMsgerShort _instance(ip,port);
         return _instance;
     }
 
