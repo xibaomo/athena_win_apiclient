@@ -67,8 +67,12 @@
 		<Unit filename="src/client_api/pair_tracker.h" />
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/win_messenger/msg.h" />
-		<Unit filename="src/win_messenger/win_messenger.cpp" />
-		<Unit filename="src/win_messenger/win_messenger.h" />
+		<Unit filename="src/win_messenger/win_msger_long.cpp" />
+		<Unit filename="src/win_messenger/win_msger_long.h">
+			<Option target="libathena_client" />
+		</Unit>
+		<Unit filename="src/win_messenger/win_msger_short.cpp" />
+		<Unit filename="src/win_messenger/win_msger_short.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

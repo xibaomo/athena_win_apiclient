@@ -3,12 +3,13 @@
 #include <cstring>
 #include "basics/types.h"
 #include "win_messenger/msg.h"
-class WinMsgerShort
+class WinMsgerLong
 {
 private:
+    long m_sock;
     String m_serverIP;
     String m_serverPort;
-    WinMsgerShort(const String& ip, const String& port)
+    WinMsgerLong(const String& ip, const String& port) : m_sock(-1)
     {
         if (ip.size() > 0)
             m_serverIP = ip;
@@ -16,10 +17,10 @@ private:
             m_serverPort = port;
     }
 public:
-    virtual ~WinMsgerShort() {;}
-    static WinMsgerShort& getInstance(const String& ip = "", const String& port = "")
+    virtual ~WinMsgerLong();
+    static WinMsgerLong& getInstance(const String& ip = "", const String& port = "")
     {
-        static WinMsgerShort _instance(ip,port);
+        static WinMsgerLong _instance(ip,port);
         return _instance;
     }
 
@@ -29,8 +30,6 @@ public:
      * Send message to api server and receive feedback
      */
     Message sendAMsgWaitFeedback(Message& msg);
-
 };
 
-typedef WinMsgerShort WinMessenger;
-
+typedef WinMsgerLong __WinMessenger;

@@ -49,8 +49,11 @@ enum class MsgAct {
 ****************************************************************************************/
 
 class Message {
+    enum {
+        HAS_ACK = 0,
+        NO_ACK
+    };
 protected:
-
     Uchar      *m_entireMsg;    // pointer to start of the entire Msg
 
     bool        m_own;
@@ -77,6 +80,8 @@ public:
 
         setAction(MsgAct::GET_READY);
         m_own = true;
+
+        setAck();
     }
     Message(const size_t dataBytes = 0, const size_t charBytes = 0) : m_entireMsg(nullptr)
     {
@@ -355,6 +360,16 @@ public:
     {
         TagType *p = getTagPtr();
         *p = tag;
+    }
+
+    void setNoAck() {
+        setTag((TagType)NO_ACK);
+    }
+    void setAck() {
+        setTag((TagType)HAS_ACK);
+    }
+    bool isAck() {
+        return (int)getTagVal() == (int)HAS_ACK;
     }
 };
 
