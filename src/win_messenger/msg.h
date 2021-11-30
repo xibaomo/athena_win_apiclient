@@ -53,12 +53,12 @@ class Message {
         QUERY = 0,
         NO_QUERY
     };
-protected:
+  protected:
     Uchar      *m_entireMsg;    // pointer to start of the entire Msg
 
     bool        m_own;
 
-public:
+  public:
 
     /**
      *  Constructor with action and dataBytes and actual payload data
@@ -69,7 +69,7 @@ public:
 
     void init(size_t dataBytes, size_t charBytes) {
         size_t msgSize = sizeof(SizeType) + sizeof(ActionType) + sizeof(TagType) +
-                sizeof(size_t)*2 + dataBytes + charBytes + sizeof(char)*3;
+                         sizeof(size_t)*2 + dataBytes + charBytes + sizeof(char)*3;
         m_entireMsg = (Uchar*)malloc(msgSize);
         *getMsgSizePtr() = msgSize;
         *getDataBytesPtr() = dataBytes;
@@ -83,14 +83,12 @@ public:
 
         setNoQuery();
     }
-    Message(const size_t dataBytes = 0, const size_t charBytes = 0) : m_entireMsg(nullptr)
-    {
+    Message(const size_t dataBytes = 0, const size_t charBytes = 0) : m_entireMsg(nullptr) {
         init(dataBytes,charBytes);
     }
 
     template <typename T>
-    Message(T action, const size_t dataBytes, const size_t charBytes) : m_entireMsg(nullptr)
-    {
+    Message(T action, const size_t dataBytes, const size_t charBytes) : m_entireMsg(nullptr) {
         init(dataBytes,charBytes);
         setAction((ActionType)action);
     }
@@ -101,8 +99,7 @@ public:
         setAction((ActionType)action);
         setComment(cmt);
     }
-    Message(const Message& other)
-    {
+    Message(const Message& other) {
         size_t msgSize = other.getMsgSize();
         m_entireMsg = (Uchar*)malloc(msgSize);
         memcpy(m_entireMsg, other.m_entireMsg, msgSize);
@@ -114,8 +111,7 @@ public:
         m_own = false;
     }
 
-    Message& operator=(const Message& other)
-    {
+    Message& operator=(const Message& other) {
         if ( m_entireMsg && m_own )
             free(m_entireMsg);
 
@@ -147,8 +143,7 @@ public:
         other.m_own = false;
     }
 
-    Message& operator=(Message&& other)
-    {
+    Message& operator=(Message&& other) {
         if ( !other.m_own )
             std::cerr << "Cannot transfer ownership if not own it" << std::endl;
 
@@ -165,8 +160,7 @@ public:
         return *this;
     }
 
-    ~Message()
-    {
+    ~Message() {
         if ( m_entireMsg && m_own ) free(m_entireMsg);
         m_entireMsg = nullptr;
     }
@@ -174,33 +168,32 @@ public:
     /**
      *  Return the size of data in bytes
      */
-    size_t    getDataBytes() const
-    {
+    size_t    getDataBytes() const {
         return *getDataBytesPtr();
     }
 
-    ActionType* getActionPtr() { return (ActionType*)(m_entireMsg + sizeof(SizeType)); }
+    ActionType* getActionPtr() {
+        return (ActionType*)(m_entireMsg + sizeof(SizeType));
+    }
 
-    ActionType  getAction() { return *getActionPtr(); }
+    ActionType  getAction() {
+        return *getActionPtr();
+    }
 
-    const size_t * getMsgSizePtr() const
-    {
+    const size_t * getMsgSizePtr() const {
         return (const size_t*) m_entireMsg;
     }
 
-    size_t *       getMsgSizePtr()
-    {
+    size_t *       getMsgSizePtr() {
         return const_cast<size_t*>(static_cast<const Message&>(*this).getMsgSizePtr());
     }
 
-    const size_t *  getDataBytesPtr() const
-    {
+    const size_t *  getDataBytesPtr() const {
         return (const size_t*)(m_entireMsg + sizeof(SizeType) + sizeof(ActionType) +
-                sizeof(TagType));
+                               sizeof(TagType));
     }
 
-    size_t *        getDataBytesPtr()
-    {
+    size_t *        getDataBytesPtr() {
         return const_cast<size_t*>(static_cast<const Message&>(*this).getDataBytesPtr());
     }
 
@@ -208,18 +201,15 @@ public:
      *  Return size of chars in bytes
      */
 
-    size_t    getCharBytes() const
-    {
+    size_t    getCharBytes() const {
         return *getCharBytesPtr();
     }
 
-    const size_t *  getCharBytesPtr() const
-    {
+    const size_t *  getCharBytesPtr() const {
         return getDataBytesPtr() + 1;   // in units of size_t
     }
 
-    size_t *        getCharBytesPtr()
-    {
+    size_t *        getCharBytesPtr() {
         return const_cast<size_t*>(static_cast<const Message&>(*this).getCharBytesPtr());
     }
 
@@ -227,21 +217,24 @@ public:
     *  Set the Action
     */
     template <typename T>
-    void      setAction(T action) { *getActionPtr() = (ActionType)action;}
+    void      setAction(T action) {
+        *getActionPtr() = (ActionType)action;
+    }
 
     /**
     * Return the total size of the message
     */
 
-    size_t    getMsgSize() const            { return *getMsgSizePtr(); }
+    size_t    getMsgSize() const            {
+        return *getMsgSizePtr();
+    }
 
     /**
      * Set the msg size
      * Usually use gMessenger.detectDataBytes(&size) first and then set msg size.
      */
 
-    void      setMsgSize(size_t msgSize)
-    {
+    void      setMsgSize(size_t msgSize) {
         if ( m_entireMsg ) free(m_entireMsg);
 
         m_entireMsg = (Uchar*) malloc(msgSize);
@@ -254,21 +247,21 @@ public:
     *  Return the head of msg
      */
 
-    Uchar*     getHead() { return m_entireMsg; }
+    Uchar*     getHead() {
+        return m_entireMsg;
+    }
 
     /**
      *  Return the pointer to data
      */
 
-    const Uchar*    getData() const
-    {
+    const Uchar*    getData() const {
         const Uchar *dataStart = m_entireMsg + sizeof(SizeType) + sizeof(ActionType) + sizeof(TagType) + 2*sizeof(size_t);
 
         return dataStart;
     }
 
-    Uchar*          getData()
-    {
+    Uchar*          getData() {
         return const_cast<Uchar*>(static_cast<const Message&>(*this).getData());
     }
 
@@ -276,8 +269,7 @@ public:
      *  Return comment
      */
 
-    String     getComment() const
-    {
+    String     getComment() const {
         size_t charBytes = getCharBytes();
 
         if ( charBytes == 0 || charBytes > getMsgSize()) return String(); // no comment
@@ -292,15 +284,13 @@ public:
     /**
      *  Return pointer to comment
      */
-    const Uchar*    getChar() const
-    {
+    const Uchar*    getChar() const {
         const Uchar* p = getData() + getDataBytes();
 
         return p;
     }
 
-    Uchar*          getChar()
-    {
+    Uchar*          getChar() {
         return const_cast<Uchar*>(static_cast<const Message&>(*this).getChar());
     }
 
@@ -308,8 +298,7 @@ public:
      *  Set comment
      */
 
-    void        setComment(const String& s)
-    {
+    void        setComment(const String& s) {
         const size_t n = getCharBytes();
 
         if ( n < s.length() ) {
@@ -337,8 +326,7 @@ public:
     /**
      *  Get pointer to tag
      */
-    TagType* getTagPtr()
-    {
+    TagType* getTagPtr() {
         TagType* p = (TagType*)(m_entireMsg + sizeof(SizeType) + sizeof(ActionType));
 
         return p;
@@ -347,8 +335,7 @@ public:
     /**
      *  Get tag value
      */
-    TagType getTagVal()
-    {
+    TagType getTagVal() {
         TagType *p = getTagPtr();
         return *p;
     }
@@ -356,8 +343,7 @@ public:
     /**
      *  Set tag
      */
-    void    setTag(TagType tag)
-    {
+    void    setTag(TagType tag) {
         TagType *p = getTagPtr();
         *p = tag;
     }
