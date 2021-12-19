@@ -58,7 +58,7 @@ MqlRates lastRate;
 int OnInit()
 {
     Print("Connecting api server ...");
-    athena_init(Symbol(),hostip,port);
+    athena_init(sym_x,hostip,port);
     Print("Api server connected");
     
     
@@ -77,7 +77,7 @@ int OnInit()
     }
     // send init time to api server
     MqlRates latestRate[1];
-    if (CopyRates(Symbol(),CURRENT_PERIOD,1,1,latestRate) <= 0) {
+    if (CopyRates(sym_x,CURRENT_PERIOD,1,1,latestRate) <= 0) {
         Print("Failed to get history latest min bar");
     }
 
@@ -176,7 +176,7 @@ void OnTick()
     
     //int action = sendMinPair(timestr,px,py,m_symbol_Hedge.Point(), m_symbol_Hedge.TickValue(),hedge_factor);
     MqlRates lastRate[1];
-    if (CopyRates(Symbol(),CURRENT_PERIOD,1,1,lastRate) <= 0) {
+    if (CopyRates(sym_x,CURRENT_PERIOD,1,1,lastRate) <= 0) {
         Print("Failed to get history latest min bar");
     }
     
