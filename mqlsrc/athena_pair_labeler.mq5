@@ -24,8 +24,7 @@ string sendInitTime(string timeString);
 int askSymPair(CharArray& arr);
 int sendPairHistX(float &arr[], int len, int n_pts,double tick_size, double tickval);
 float sendPairHistY(float &arr[], int len, int n_pts, double tick_size, double tick_val);
-int sendMinPair(string timestr, double x_ask, double x_bid, double ticksize_x, double tickval_x, double y_ask, double y_bid, double ticksize_y, double tickval_x, int npos, int ntp, int nsl, 
-                  double profit,double& hf);
+int sendMinPair(string timestr, double x_ask, double x_bid, double ticksize_x, double tickval_x, double y_ask, double y_bid, double ticksize_y, double tickval_x, int npos, int ntp, int nsl, double& hf);
 int sendMinPairLabel(int id, int label);
 //int classifyAMinBar(float open,float high, float low, float close, float tickvol, string timeString);
 int registerPairStr(CharArray& arr, bool isSend);
@@ -34,7 +33,6 @@ int getPairedTicketStr(CharArray& arr); // arr.a is tx, arr.b is ty
 int sendCurrentProfit(float profit);
 int sendPositionProfit(float profit);
 int sendSymbolHistory(float &arr[],int len, string sym);
-int sendAccountBalance(float balance);
 int athena_finish();
 int test_api_server(string hostip, string port);
 #import
@@ -47,11 +45,11 @@ int test_api_server(string hostip, string port);
 #define MAX_RAND 32767
 #define CURRENT_PERIOD PERIOD_M5
 #define STOP_PERCENT 0.05
-#define MAX_ALLOWED_POS 200
-#define HISTORY_LEN 6000
+#define MAX_ALLOWED_POS 2000000
+#define HISTORY_LEN 2000
 
-#define TAKE_PROFIT 15
-#define STOP_LOSS -12.53
+#define TAKE_PROFIT 2
+#define STOP_LOSS -5
 #define MAX_TOTAL_PROFIT 300
 #define MAX_TOTAL_LOSS -1000
 //--- special fix for a mql4 bug (ME 934)
@@ -203,7 +201,6 @@ void OnDeinit(const int reason)
 {
 //---
    printf("Pair profit, max: %f, min: %f",g_maxPairProfit, g_minPairProfit);
-   sendAccountBalance(m_account.Balance());
     athena_finish();
     Print("athena_finish called");
 }
@@ -249,11 +246,8 @@ void OnTick()
     //int action = sendMinPair(timestr,px,py,m_symbol_Hedge.Point(), m_symbol_Hedge.TickValue(),hedge_factor);
     double tkx = m_symbol_Base.TickValue();
     double tky = m_symbol_Hedge.TickValue();
-    
-    printf("Sending min pair to backend...");
     int action = sendMinPair(timestr,x_ask,x_bid,m_symbol_Base.TickSize(), m_symbol_Base.TickValue(), y_ask,y_bid,m_symbol_Hedge.TickSize(), m_symbol_Hedge.TickValue(), 
-                 PositionsTotal(),g_ntp,g_nsl,m_account.Profit(),hedge_factor);
-    printf("Received decision from backend: %d", action);
+                 PositionsTotal(),g_ntp,g_nsl,hedge_factor);
     
     double tmp = 1/fabs(hedge_factor)*lot_size_x;
     tmp*=1.2;
@@ -261,11 +255,7 @@ void OnTick()
     PrintFormat("Lot y: %f",lot_size_y);
 
     CharArray arr;
-    if (action==0) {
-      Print("No action");
-      return;
-    } 
-
+    action =0;
     if (action ==2) {
       if (PositionsTotal()>=MAX_ALLOWED_POS-2) return;
       //PrintFormat("Buy at %f",m_symbol_Base.Ask());
@@ -291,6 +281,8 @@ void OnTick()
 
       registerPair(tx,ty,true);
    }
+   
+   //action =1;
    if (action ==1) {
       if (PositionsTotal()>=MAX_ALLOWED_POS-2) return;
       //PrintFormat("Sell at %f",m_symbol_Base.Bid());
@@ -435,6 +427,26 @@ void checkPairProfit()
          totalProf+=py;
    
          if (px+py >= TAKE_PROFIT || px+py <= STOP_LOSS) {
+            m_position.SelectByTicket(ty);
+            string sid = m_position.Comment();
+            int id = StringToInteger(sid);
+            int label = -1;
+            ENUM_POSITION_TYPE type = m_position.PositionType();
+            if (type==POSITION_TYPE_BUY && px+py>0) {
+               label = 0;
+            }
+            if (type==POSITION_TYPE_BUY && px+py < 0) {
+               label = 1;
+            }
+            if (type==POSITION_TYPE_SELL && px+ py > 0) {
+               label = 2;
+            }
+            if (type==POSITION_TYPE_SELL && px + py < 0) {
+               label = 3;
+            }
+            sendMinPairLabel(id,label);
+         
+         
             PrintFormat("Take profit: %f, closing postion pair",px+py); 
             while(m_position.SelectByTicket(tx))
                m_trade.PositionClose(tx);
@@ -605,8 +617,11 @@ long OpenBuy(CSymbolInfo &symbol, double lotsize, string cmt="")
 {
     double check_open_long_lot=lotsize;
 //--- check volume before OrderSend to avoid "not enough money" error (CTrade)
+    
     double check_volume_lot=m_trade.CheckVolume(symbol.Name(),check_open_long_lot,symbol.Ask(),ORDER_TYPE_BUY);
+    
 
+    printf("buy volume %f",check_volume_lot);
     int digits = (int)SymbolInfoInteger(symbol.Name(),SYMBOL_DIGITS);
     double price = symbol.Ask();
     double tp = NormalizeDouble(price + STOP_PERCENT*price,digits);

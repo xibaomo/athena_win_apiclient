@@ -17,6 +17,7 @@ struct CharArray {
    char c[BUFLEN];
 };
 #import "athena_win_apiclient.dll"
+int athena_test_dll();
 int athena_init(string symbol, string hostip, string port);
 //int sendHistoryTicks(float &arr[], int len, string pos_type);
 //int sendHistoryMinBars(float &arr[], int len, int minbar_size);
@@ -27,6 +28,7 @@ float sendPairHistY(float &arr[], int len, int n_pts, double tick_size, double t
 int sendMinPair(string timestr, double x_ask, double x_bid, double ticksize_x, double tickval_x, double y_ask, double y_bid, double ticksize_y, double tickval_x, int npos, int ntp, int nsl, 
                   double profit,double& hf);
 int sendMinPairLabel(int id, int label);
+int getXYLotSizes(double& lx, double& ly);
 //int classifyAMinBar(float open,float high, float low, float close, float tickvol, string timeString);
 int registerPairStr(CharArray& arr, bool isSend);
 int sendPairProfitStr(CharArray& arr, float profit);
@@ -45,13 +47,13 @@ int test_api_server(string hostip, string port);
 #define SLEEP_MS 10000
 #define ONE_MIN 1000*60
 #define MAX_RAND 32767
-#define CURRENT_PERIOD PERIOD_M5
+#define CURRENT_PERIOD PERIOD_H1
 #define STOP_PERCENT 0.05
 #define MAX_ALLOWED_POS 200
-#define HISTORY_LEN 6000
+#define HISTORY_LEN 2000
 
-#define TAKE_PROFIT 15
-#define STOP_LOSS -12.53
+#define TAKE_PROFIT 100
+#define STOP_LOSS -100
 #define MAX_TOTAL_PROFIT 300
 #define MAX_TOTAL_LOSS -1000
 //--- special fix for a mql4 bug (ME 934)
@@ -63,7 +65,8 @@ CSymbolInfo    m_symbol_Hedge;               // symbol info object
 CAccountInfo   m_account;                    // account info wrapper
 
 //--- input parameters
-string hostip    = "192.168.1.103";
+string hostip    = "192.168.150.67";
+//string hostip    = "127.0.0.1";
 string port      = "8888";
 
 sinput ulong  m_magic   = 2512554564564;
@@ -100,6 +103,7 @@ int OnInit()
     registerCurrentPositions();
     checkPairProfit();
     
+    athena_test_dll();
     Print("Connecting api server ...");
     athena_init(Symbol(),hostip,port);
     Print("Api server connected");
@@ -139,6 +143,12 @@ int OnInit()
 
     sendPastMinBars(sym_x,HISTORY_LEN,"x");
     sendPastMinBars(sym_y,HISTORY_LEN,"y");
+    
+    getXYLotSizes(lot_size_x,lot_size_y);
+    
+    lot_size_x = NormalizeDouble(lot_size_x,2);
+    lot_size_y = NormalizeDouble(lot_size_y,2);
+    PrintFormat("lot size: %f, %f",lot_size_x,lot_size_y);
         
     m_trade.SetExpertMagicNumber(m_magic);
 
@@ -255,11 +265,6 @@ void OnTick()
                  PositionsTotal(),g_ntp,g_nsl,m_account.Profit(),hedge_factor);
     printf("Received decision from backend: %d", action);
     
-    double tmp = 1/fabs(hedge_factor)*lot_size_x;
-    tmp*=1.2;
-    lot_size_y = NormalizeDouble(tmp,2);  
-    PrintFormat("Lot y: %f",lot_size_y);
-
     CharArray arr;
     if (action==0) {
       Print("No action");
@@ -329,7 +334,7 @@ void OnTick()
         //closeTypeYPairs(POSITION_TYPE_BUY);
    }
    if (action == 5) {
-     //if(isHavePosType(POSITION_TYPE_SELL))
+      //if(isHavePosType(POSITION_TYPE_SELL))
          //closeTypeYPairs(POSITION_TYPE_SELL);
    }
  
