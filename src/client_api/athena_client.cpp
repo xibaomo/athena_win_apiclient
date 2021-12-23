@@ -259,23 +259,27 @@ __declspec(dllexport) int __stdcall classifyAMinBar(real64 open, real64 high, re
     return 0;
 }
 
-__declspec(dllexport) int __stdcall athena_register_position(mt5ulong ticket, wchar_t* timestamp) {
+__declspec(dllexport) int __stdcall athena_register_position(mt5ulong ticket, wchar_t* timestamp, double ask, double bid) {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
     String tstr = String(ts);
 
-    Message msg(sizeof(mt5ulong),tstr.size());
-    msg.setAction((ActionType)FXAct::REGISTER_POS);
-    mt5ulong* pm = (mt5ulong*)msg.getData();
-    pm[0] = ticket;
-    msg.setComment(tstr);
+    SerializePack pack;
+    pack.real64_vec.push_back(ask);
+    pack.real64_vec.push_back(bid);
+    pack.str_vec.push_back(tstr);
+    pack.mt5ulong_vec.push_back(ticket);
+
+    String cmt = serialize(pack);
+
+    Message msg(FXAct::REGISTER_POS,cmt);
 
     auto& msger = WinMessenger::getInstance();
     msger.sendAMsgNoFeedback(msg);
     return 0;
 }
 
-__declspec(dllexport) int __stdcall athena_send_closed_position_info(mt5ulong ticket, wchar_t* timestamp, double profit) {
+__declspec(dllexport) int __stdcall athena_send_closed_position_info(mt5ulong ticket, wchar_t* timestamp, double price,double profit) {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
     String tstr = String(ts);
@@ -283,6 +287,7 @@ __declspec(dllexport) int __stdcall athena_send_closed_position_info(mt5ulong ti
     SerializePack pack;
     pack.mt5ulong_vec.push_back(ticket);
     pack.str_vec.push_back(tstr);
+    pack.real64_vec.push_back(price);
     pack.real64_vec.push_back(profit);
 
     String cmt = serialize(pack);

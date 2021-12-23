@@ -43,8 +43,8 @@ __declspec(dllexport) int __stdcall classifyAMinBar(real64 open, real64 high, re
  */
 __declspec(dllexport) int __stdcall athena_accumulate_minbar(wchar_t* time_str, real64 open, real64 high, real64 low, real64 close, real64 tickvol);
 __declspec(dllexport) int __stdcall athena_request_action(real64 new_open);
-__declspec(dllexport) int __stdcall athena_register_position(mt5ulong ticket, wchar_t* time);
-__declspec(dllexport) int __stdcall athena_send_closed_position_info(mt5ulong ticket, wchar_t* time, double profit);
+__declspec(dllexport) int __stdcall athena_register_position(mt5ulong ticket, wchar_t* time, double ask, double bid);
+__declspec(dllexport) int __stdcall athena_send_closed_position_info(mt5ulong ticket, wchar_t* time, double price, double profit);
 
 /**
  * Send total profit of the current positions

@@ -21,8 +21,8 @@ int athena_test_dll();
 int athena_init(string symbol, string hostip, string port);
 int athena_send_history_minbars(double &arr[], int len, int minbar_size);
 int athena_request_action(double);
-int athena_register_position(ulong tk, string timestamp);
-int athena_send_closed_position_info(ulong tk, string timestamp, double profit);
+int athena_register_position(ulong tk, string timestamp, double ask, double bid);
+int athena_send_closed_position_info(ulong tk, string timestamp, double price, double profit);
 int athena_accumulate_minbar(string date,double open, double high, double low, double close, double tickvol);
 int athena_finish();
 int test_api_server(string hostip, string port);
@@ -35,6 +35,9 @@ int test_api_server(string hostip, string port);
 #define CURRENT_PERIOD PERIOD_M15
 #define HISTORY_LEN 1000
 #define RETURN_THRESHOLD 3.5E-3
+#define RETURN_DEV 0.15
+double TP_RETURN = RETURN_THRESHOLD*(1-0);
+double SL_RETURN = RETURN_THRESHOLD*(1+RETURN_DEV);
 string timeBound = "2021.10.12 23:10";
 string hostip    = "192.168.150.67";
 string port      = "8888";
@@ -172,7 +175,8 @@ void OnTick()
    float x_bid = m_symbol_Base.Bid();
    float x_spread = m_symbol_Base.Spread();
 
-    float px = (m_symbol_Base.Ask()+m_symbol_Base.Bid())*.5;
+    //float px = (m_symbol_Base.Ask()+m_symbol_Base.Bid())*.5;
+    float px = x_bid;
     
     //int action = sendMinPair(timestr,px,py,m_symbol_Hedge.Point(), m_symbol_Hedge.TickValue(),hedge_factor);
     MqlRates lastRate[1];
@@ -222,7 +226,7 @@ void OnTick()
       PrintFormat("All positions closed");
    }
    if (tk > 0) {
-      athena_register_position(tk,timestr);
+      athena_register_position(tk,timestr,x_ask,x_bid);
    }
 
     return;
@@ -255,7 +259,8 @@ void sendLastDeal() {
                    long ptk = HistoryDealGetInteger(temp_Ticket,DEAL_POSITION_ID);
                    PrintFormat("position closed. profit: %.2f",last_trade_profit);
                                    
-                   athena_send_closed_position_info(ptk,ts,last_trade_profit);
+                   double price = HistoryDealGetDouble(temp_Ticket,DEAL_PRICE);
+                   athena_send_closed_position_info(ptk,ts,price, last_trade_profit);
                  }
         }
         else if(current_open_positions > previous_open_positions) {
@@ -349,8 +354,8 @@ ulong OpenBuy(CSymbolInfo &symbol, double lotsize, string cmt="")
 
     int digits = (int)SymbolInfoInteger(symbol.Name(),SYMBOL_DIGITS);
     double price = symbol.Ask();
-    double tp = NormalizeDouble(price + RETURN_THRESHOLD*price,digits);
-    double sl = NormalizeDouble(price - RETURN_THRESHOLD*price,digits);
+    double tp = NormalizeDouble(price + TP_RETURN*price,digits);
+    double sl = NormalizeDouble(price - SL_RETURN*price,digits);
     
 
     if(check_volume_lot!=0.0) {
@@ -405,8 +410,8 @@ ulong OpenSell(CSymbolInfo &symbol,double lotsize, string cmt="")
     int digits = (int)SymbolInfoInteger(symbol.Name(),SYMBOL_DIGITS);
     double price = symbol.Bid();
     double pv = SymbolInfoDouble(symbol.Name(),SYMBOL_TRADE_TICK_VALUE) * SymbolInfoDouble(symbol.Name(),SYMBOL_POINT);
-    double tp = NormalizeDouble(price - RETURN_THRESHOLD*price,digits);
-    double sl = NormalizeDouble(price + RETURN_THRESHOLD*price,digits);
+    double tp = NormalizeDouble(price - TP_RETURN*price,digits);
+    double sl = NormalizeDouble(price + SL_RETURN*price,digits);
 
     if(check_volume_lot!=0.0) {
         if(check_volume_lot>=check_open_short_lot) {
