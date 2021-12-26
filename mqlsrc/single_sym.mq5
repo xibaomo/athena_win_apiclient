@@ -19,7 +19,7 @@ struct CharArray {
 #import "athena_win_apiclient.dll"
 int athena_test_dll();
 int athena_init(string symbol, string hostip, string port);
-int athena_send_history_minbars(double &arr[], int len, int minbar_size);
+int athena_send_history_minbars(string tms, double &arr[], int len, int minbar_size);
 int athena_request_action(double);
 int athena_register_position(ulong tk, string timestamp, double ask, double bid);
 int athena_send_closed_position_info(ulong tk, string timestamp, double price, double profit);
@@ -38,7 +38,7 @@ int test_api_server(string hostip, string port);
 #define RETURN_DEV 0.15
 double TP_RETURN = RETURN_THRESHOLD*(1-0);
 double SL_RETURN = RETURN_THRESHOLD*(1+RETURN_DEV);
-string timeBound = "2021.10.12 23:10";
+string timeBound = "2021.12.07 23:10";
 string hostip    = "192.168.150.67";
 string port      = "8888";
 sinput ulong  m_magic   = 2512554564564;
@@ -117,8 +117,12 @@ int sendPastMinBars(string sym, int histLen)
     int idx=0;
     double data[];
     ArrayResize(data,actualHistLen*MINBAR_SIZE);
+    string tms="";
     int k=0;
     for (int i=idx; i < histLen; i++) {
+        string ts = TimeToString(rates[i].time);
+        StringAdd(tms,ts);
+        StringAdd(tms,";");
         data[k++] = rates[i].open;
         data[k++] = rates[i].high;
         data[k++] = rates[i].low;
@@ -130,7 +134,7 @@ int sendPastMinBars(string sym, int histLen)
     PrintFormat("Latest bar: %f,%f,%f,%f,%f",lastRate.open,lastRate.high,lastRate.low,lastRate.close,lastRate.tick_volume);
     PrintFormat("bars to send: %d",actualHistLen);
     
-    athena_send_history_minbars(data,actualHistLen,MINBAR_SIZE);
+    athena_send_history_minbars(tms,data,actualHistLen,MINBAR_SIZE);
     
     string t1 = TimeToString(rates[0].time);
     string t2 = TimeToString(rates[histLen-1].time);
