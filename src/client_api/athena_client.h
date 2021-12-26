@@ -28,7 +28,7 @@ __declspec(dllexport) int __stdcall athena_init(wchar_t* symbol, wchar_t* hostip
  */
 __declspec(dllexport) int __stdcall sendHistoryTicks(real64* data, int len, wchar_t* pos_type);
 
-__declspec(dllexport) int __stdcall athena_send_history_minbars(real64* data, int len, int n_pts);
+__declspec(dllexport) int __stdcall athena_send_history_minbars(wchar_t* time_strs, real64* data, int len, int n_pts);
 
 __declspec(dllexport) wchar_t* __stdcall sendInitTime(wchar_t* timeString);
 

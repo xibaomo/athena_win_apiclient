@@ -177,9 +177,22 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(real64* data, int len, wcha
     return 0;
 }
 
-__declspec(dllexport) int __stdcall athena_send_history_minbars(real64* data, int nbars, int bar_size)
+__declspec(dllexport) int __stdcall athena_send_history_minbars(wchar_t* time_strs, real64* data, int nbars, int bar_size)
 {
-    sendArray(FXAct::HISTORY_MINBAR,data,nbars,bar_size);
+    char pt[1000*64];
+    std::wcstombs(pt,time_strs,1000*64);
+    String tms = String(pt);
+
+    SerializePack pack;
+    pack.str_vec.push_back(tms);
+    pack.real64_vec.assign(data,data+nbars*bar_size);
+    pack.int32_vec.push_back(nbars);
+    pack.int32_vec.push_back(bar_size);
+
+    String cmt = serialize(pack);
+    Message msg(FXAct::HISTORY_MINBAR,cmt);
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
     return 0;
 }
 
