@@ -20,7 +20,7 @@ struct CharArray {
 int athena_test_dll();
 int athena_init(string symbol, string hostip, string port);
 int athena_send_history_minbars(string tms, double &arr[], int len, int minbar_size);
-int athena_request_action(double);
+int athena_request_action(string,double);
 int athena_register_position(ulong tk, string timestamp, double ask, double bid);
 int athena_send_closed_position_info(ulong tk, string timestamp, double price, double profit);
 int athena_accumulate_minbar(string date,double open, double high, double low, double close, double tickvol);
@@ -189,16 +189,16 @@ void OnTick()
     }
     
     
-    string tmstr = TimeToString(lastRate[0].time);
-    PrintFormat("Sending min bar to backend: %s",tmstr);
-    athena_accumulate_minbar(tmstr,lastRate[0].open,lastRate[0].high,lastRate[0].low,lastRate[0].close,lastRate[0].tick_volume);
+    string oldtmstr = TimeToString(lastRate[0].time);
+    PrintFormat("Sending min bar to backend: %s",oldtmstr);
+    athena_accumulate_minbar(oldtmstr,lastRate[0].open,lastRate[0].high,lastRate[0].low,lastRate[0].close,lastRate[0].tick_volume);
     printf("min bar sent");
     
     if (nowHour == prevHour) return;
     if (nowHour == 0) return;
     prevHour = nowHour;
     printf("Requst decision ...");
-    int action = athena_request_action(px);
+    int action = athena_request_action(timestr,px);
     printf("Received decision from backend: %d", action);
     
     CharArray arr;

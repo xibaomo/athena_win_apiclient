@@ -330,13 +330,14 @@ __declspec(dllexport) int __stdcall athena_accumulate_minbar(wchar_t* time_str, 
     return 0;
 }
 
-__declspec(dllexport) int __stdcall athena_request_action(real64 new_open) {
-
+__declspec(dllexport) int __stdcall athena_request_action(wchar_t* time_str, real64 new_open) {
+    String cmt = wchar_t2string(time_str);
     auto& msger = WinMessenger::getInstance();
-    Message msg(sizeof(real64));
+    Message msg(sizeof(real64),cmt.size());
     msg.setAction((ActionType)FXAct::REQUEST_ACT);
     real64* pm = (real64*)msg.getData();
     pm[0] = new_open;
+    msg.setComment(cmt);
 
     Message backmsg = msger.sendAMsgWaitFeedback(msg);
 
