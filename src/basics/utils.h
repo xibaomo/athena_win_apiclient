@@ -60,11 +60,11 @@ public:
 
 struct SerializePack {
     std::vector<int>   int32_vec;
-    std::vector<float> real32_vec;
+    //std::vector<float> real32_vec;
     std::vector<double> real64_vec;
     std::vector<std::string> str_vec;
     std::vector<int>   int32_vec1;
-    std::vector<float> real32_vec1;
+    //std::vector<float> real32_vec1;
     std::vector<double> real64_vec1;
     std::vector<std::string> str_vec1;
     std::vector<mt5ulong> mt5ulong_vec;
@@ -73,11 +73,11 @@ struct SerializePack {
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & int32_vec;
-        ar & real32_vec;
+//        ar & real32_vec;
         ar & real64_vec;
         ar & str_vec;
         ar & int32_vec1;
-        ar & real32_vec1;
+        //ar & real32_vec1;
         ar & real64_vec1;
         ar & str_vec1;
         ar & mt5ulong_vec;

@@ -32,6 +32,7 @@ enum class FXAct {
     ACCOUNT_BALANCE,
     GET_LOTS,
     REQUEST_ACT,
+    REQUEST_ACT_RTN,
     REGISTER_POS,
     CLOSE_POS_INFO
 };

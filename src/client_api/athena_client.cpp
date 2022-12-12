@@ -179,8 +179,8 @@ __declspec(dllexport) int __stdcall sendHistoryTicks(real64* data, int len, wcha
 
 __declspec(dllexport) int __stdcall athena_send_history_minbars(wchar_t* time_strs, real64* data, int nbars, int bar_size)
 {
-    char pt[1000*64];
-    std::wcstombs(pt,time_strs,1000*64);
+    char pt[50000*64];
+    std::wcstombs(pt,time_strs,50000*64);
     String tms = String(pt);
 
     SerializePack pack;
@@ -341,25 +341,28 @@ __declspec(dllexport) int __stdcall athena_request_action(wchar_t* time_str, rea
 
     Message backmsg = msger.sendAMsgWaitFeedback(msg);
 
-    FXAct action = (FXAct)backmsg.getAction();
-    switch(action) {
-    case FXAct::NOACTION:
-        return 0;
-        break;
-    case FXAct::PLACE_BUY:
-        //Log(LOG_INFO) << "Good to open buy position at " + std::to_string(close);
-        return 1;
-        break;
-    case FXAct::PLACE_SELL:
-        //Log(LOG_INFO) << "Good to open sell position at " + std::to_string(close);
-        return 2;
-        break;
-    default:
-        //Log(LOG_FATAL) << "Unexpected action";
-        break;
-    }
+    int* pmr = (int*)backmsg.getData();
 
-    return 0;
+    return pmr[0];
+}
+
+__declspec(dllexport) int __stdcall athena_request_action_rtn(wchar_t* time_str, real64 new_open, // input
+                                                              real64* rtn) { // output
+    String cmt = wchar_t2string(time_str);
+    auto& msger = WinMessenger::getInstance();
+    Message msg(sizeof(real64),cmt.size());
+    msg.setAction((ActionType)FXAct::REQUEST_ACT_RTN);
+    real64* pm = (real64*)msg.getData();
+    pm[0] = new_open;
+    msg.setComment(cmt);
+
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
+    real64* pd = (real64*)backmsg.getData();
+    *rtn = pd[0];
+
+    int* pmr = (int*)backmsg.getData();
+
+    return pmr[0];
 }
 
 __declspec(dllexport) int __stdcall sendCurrentProfit(real64 profit)
@@ -410,11 +413,11 @@ __declspec(dllexport) int __stdcall sendPairHistX(real64* data, int len, int n_p
 {
     auto& msger = WinMessenger::getInstance();
     SerializePack pack;
-    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.real64_vec.assign(data,data+len*n_pts);
     pack.int32_vec.push_back(len);
     pack.int32_vec.push_back(n_pts);
-    pack.real64_vec.push_back(tick_size);
-    pack.real64_vec.push_back(tick_val);
+    pack.real64_vec1.push_back(tick_size);
+    pack.real64_vec1.push_back(tick_val);
     String s = serialize(pack);
     Message msg(FXAct::PAIR_HIST_X,s);
     msger.sendAMsgNoFeedback(msg);
@@ -426,11 +429,11 @@ __declspec(dllexport) real64 __stdcall sendPairHistY(real64* data, int len, int 
     auto& msger = WinMessenger::getInstance();
 
     SerializePack pack;
-    pack.real32_vec.assign(data,data+len*n_pts);
+    pack.real64_vec.assign(data,data+len*n_pts);
     pack.int32_vec.push_back(len);
     pack.int32_vec.push_back(n_pts);
-    pack.real64_vec.push_back(tick_size);
-    pack.real64_vec.push_back(tick_val);
+    pack.real64_vec1.push_back(tick_size);
+    pack.real64_vec1.push_back(tick_val);
     String s = serialize(pack);
     Message msg(FXAct::PAIR_HIST_Y,s);
     Message rcv = msger.sendAMsgWaitFeedback(msg);
