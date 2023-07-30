@@ -46,6 +46,7 @@ __declspec(dllexport) int __stdcall athena_request_action(wchar_t* time_str, rea
 __declspec(dllexport) int __stdcall athena_request_action_rtn(wchar_t* time_str, real64 new_open, real64* rtn);
 __declspec(dllexport) int __stdcall athena_register_position(mt5ulong ticket, wchar_t* time, double ask, double bid);
 __declspec(dllexport) int __stdcall athena_send_closed_position_info(mt5ulong ticket, wchar_t* time, double price, double profit);
+__declspec(dllexport) int __stdcall athena_update_position(mt5ulong ticket, double profit);
 
 /**
  * Send total profit of the current positions
@@ -89,6 +90,13 @@ __declspec(dllexport) int __stdcall getXYLotSizes(double& lotx, double& loty);
  * API of multinode arbitrage
  */
 __declspec(dllexport) int __stdcall sendAllSymOpen(real64* data, int len, CharArray& c_arr);
+
+
+/**
+ * API for graph loop
+ */
+__declspec(dllexport) int __stdcall request_all_syms(CharArray& arr, int& nsyms);
+
 //////////////////////// for test purpose ////////////////////////////
 __declspec(dllexport) int __stdcall test_api_server(wchar_t* hostip, wchar_t* port);
 

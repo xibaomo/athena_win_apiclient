@@ -9,6 +9,7 @@
 #include <vector>
 #include <locale>
 #include <codecvt>
+#include <iostream>
 #include "athena_client.h"
 #include "win_messenger/msg.h"
 #include "win_messenger/win_msger_short.h"
@@ -18,6 +19,24 @@
 #include "pair_tracker.h"
 #define DEFAULT_BUFLEN 512
 #define CHARBUFLEN 16
+using namespace std;
+struct PosInfo {
+    real64 highest_profit;
+    std::vector<real64> profits;
+    String open_time;
+    String close_time;
+    PosInfo(){
+        highest_profit = -999999.f;
+    }
+
+    void updateProfit(real64 p) {
+        profits.push_back(p);
+        highest_profit = p > highest_profit? p : highest_profit;
+    }
+};
+
+static std::map<mt5ulong,PosInfo> gAllPos;
+
 static std::wstring s2ws(const std::string& str)
 {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
@@ -277,6 +296,8 @@ __declspec(dllexport) int __stdcall athena_register_position(mt5ulong ticket, wc
     std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
     String tstr = String(ts);
 
+    gAllPos[ticket].open_time = tstr;
+
     SerializePack pack;
     pack.real64_vec.push_back(ask);
     pack.real64_vec.push_back(bid);
@@ -292,10 +313,19 @@ __declspec(dllexport) int __stdcall athena_register_position(mt5ulong ticket, wc
     return 0;
 }
 
+__declspec(dllexport) int __stdcall athena_update_position(mt5ulong ticket, double profit) {
+    if(gAllPos.find(ticket) == gAllPos.end()) return 0;
+    gAllPos[ticket].updateProfit(profit);
+    return 0;
+}
+
 __declspec(dllexport) int __stdcall athena_send_closed_position_info(mt5ulong ticket, wchar_t* timestamp, double price,double profit) {
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,timestamp,DEFAULT_BUFLEN);
     String tstr = String(ts);
+
+    gAllPos[ticket].close_time = tstr;
+    gAllPos[ticket].updateProfit(profit);
 
     SerializePack pack;
     pack.mt5ulong_vec.push_back(ticket);
@@ -383,11 +413,31 @@ __declspec(dllexport) int __stdcall sendAccountBalance(real64 balance){
     sendANumber(FXAct::ACCOUNT_BALANCE,balance);
     return 0;
 }
+
+String packAllPosInfo() {
+    SerializePack pack;
+    for(auto& it : gAllPos) {
+        auto& ps = it.second.profits;
+        pack.real64_vec.insert(pack.real64_vec.end(),ps.begin(),ps.end());
+        pack.int32_vec.push_back(ps.size());
+    }
+
+    String cmt = serialize(pack);
+    return cmt;
+}
+
 __declspec(dllexport) int __stdcall athena_finish()
 {
+    auto& msger = WinMessenger::getInstance();
+
+    String cmt = packAllPosInfo();
+    Message m1(FXAct::ALL_POS_INFO,cmt);
+
+    msger.sendAMsgNoFeedback(m1);
+
     Message msg(1);
     msg.setAction((ActionType)MsgAct::NORMAL_EXIT);
-    auto& msger = WinMessenger::getInstance();
+
     msger.sendAMsgNoFeedback(msg);
 
     return 0;
@@ -631,6 +681,30 @@ __declspec(dllexport) int __stdcall sendAllSymOpen(real64* data, int len, CharAr
 
     String cmt = backmsg.getComment();
     strcpy(c_arr.b,cmt.c_str());
+
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall request_all_syms(CharArray& arr, int& nsyms) {
+    Message msg(1);
+    msg.setAction(FXAct::GLP_ALL_SYMS);
+    auto& msger = WinMessenger::getInstance();
+
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
+
+    size_t offset=7;
+    char* p = (char*)backmsg.getChar();
+    nsyms = backmsg.getCharBytes()/offset;
+
+    int pos = 0;
+    for(int i =0; i < nsyms; i++){
+      // Copy each string
+      strcpy(arr.a + pos, p);
+
+      // Move position by length of string + 1 for null terminator
+      pos += offset;
+      p+=offset;
+    }
 
     return 0;
 }
