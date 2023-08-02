@@ -18,19 +18,34 @@ struct CharArray {
 };
 #import "athena_win_apiclient.dll"
 int athena_init(string symbol, string hostip, string port);
-int request_all_syms(CharArray& arr, int& nsyms);
+int glp_request_all_syms(CharArray& arr, int& nsyms);
+int glp_send_new_quotes(double& arr[], int len, string tms, CharArray&, int&, int& pos[]);
+int glp_get_loop();
+int glp_add_sym_price(string sym, double price);
+int glp_compute_loop_return(double& loop_rtn);
+int glp_clear_loop();
+int athena_finish();
 #import
 
+#define QUOTE_PERIOD PERIOD_M5
+#define CHECKPOS_PERIOD PERIOD_M1
+#define MAXTRY 3
+#define SLEEP_MS 10000
+
+double TP_RETURN = 0.01f;
+double SL_RETURN = 0.01f;
 string timeBound = "2023.2.28 23:10";
 string hostip    = "192.168.150.67";
 string port      = "8888";
 sinput ulong  m_magic   = 2512554564564;
 string sym_x = "EURUSD";
-double lot_size   = 0.1;
+double lot_size   = 0.2;
 ulong m_slippage = 10;
 
 string g_all_syms[];
 int    g_num_syms;
+int    g_pos_types[20];
+
 
 CPositionInfo  m_position;                   // trade position object
 CTrade         m_trade;                      // trading object
@@ -48,7 +63,7 @@ int OnInit()
    
    CharArray arr;
    string strarr[];
-   request_all_syms(arr,g_num_syms);
+   glp_request_all_syms(arr,g_num_syms);
    PrintFormat("num of syms: %d\n",g_num_syms);   //int nsyms = StringSplit(arr.a, '\0',strarr);
    ArrayResize(g_all_syms,g_num_syms);
    int pos=0;
@@ -77,7 +92,8 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
-   
+   athena_finish();
+    Print("athena_finish called");
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -85,8 +101,50 @@ void OnDeinit(const int reason)
 void OnTick()
   {
 //---
-   
-  }
+    if(isQuoteTime() && PositionsTotal() == 0) {
+       double prices[];
+       CharArray trade_syms;
+       int num_trade_syms;
+       datetime time_0 = iTime(NULL,QUOTE_PERIOD,0);
+       string timestr = TimeToString(time_0);
+       ArrayResize(prices,g_num_syms);
+       for(int i=0; i < g_num_syms; i++) {
+            if (!m_symbol_Base.Name(g_all_syms[i])) {
+               PrintFormat("ERROR! Failed to set symbol: %s",g_all_syms[i]);
+               return;
+            }
+            if (!m_symbol_Base.RefreshRates()) {
+               Print("Failed to refresh rates\n");
+               return;
+            }
+            prices[i] = m_symbol_Base.Bid();
+       }
+       glp_send_new_quotes(prices,g_num_syms,timestr,trade_syms,num_trade_syms,g_pos_types);
+       ArrayFree(prices);
+       if(num_trade_syms==0) {
+         Print("No action");
+         return;
+       }
+       place_positions(trade_syms,num_trade_syms);
+       glp_get_loop();
+    }// end of quote time
+    
+    if(isCheckPosTime() && PositionsTotal() > 0) {
+        int np = PositionsTotal();
+        for(int i=0; i < np; i++) {
+            string symbol = PositionGetSymbol(i);
+            double bidPrice = SymbolInfoDouble(symbol, SYMBOL_BID);
+            PrintFormat("sym: %s, price: %f",symbol,bidPrice);
+            glp_add_sym_price(symbol,bidPrice);
+        }
+        double loop_rtn;
+        glp_compute_loop_return(loop_rtn);
+        if(loop_rtn < 0.0003) {
+            closeAllPos();
+            glp_clear_loop();
+        } 
+    } // end of check open positions
+ }
 //+------------------------------------------------------------------+
 //| Trade function                                                   |
 //+------------------------------------------------------------------+
@@ -126,4 +184,164 @@ bool IsFillingTypeAllowed(int fill_type)
     int filling=m_symbol_Base.TradeFillFlags();
 //--- Return true, if mode fill_type is allowed
     return((filling & fill_type)==fill_type);
+}
+
+bool isQuoteTime() {
+   static datetime prevBar=0;
+   datetime time_0 = iTime(NULL,QUOTE_PERIOD,0); // opening time of the bar
+   if (time_0 == prevBar)
+     return false;
+   prevBar = time_0;
+   return true;
+}
+
+bool isCheckPosTime() {
+   static datetime prevBar=0;
+   datetime time_0 = iTime(NULL,CHECKPOS_PERIOD,0); // opening time of the bar
+   if (time_0 == prevBar)
+     return false;
+   prevBar = time_0;
+   return true;
+}
+
+void place_positions(CharArray& trade_syms, int num) {
+    int offset = 7;
+    int pos = 0;
+    for (int i=0; i < num; i++) {
+        string tmp = CharArrayToString(trade_syms.a,pos,offset);
+        pos+=offset;
+        if(!m_symbol_Base.Name(tmp)) {
+            PrintFormat("ERROR! Failed to set symbol: %s",tmp);
+            return;
+        }
+        if (!m_symbol_Base.RefreshRates()) {
+            Print("Failed to refresh rates\n");
+            return;
+        }
+        
+        if (g_pos_types[i] > 0) {
+            OpenBuy(m_symbol_Base,lot_size);
+        }
+        if (g_pos_types[i] < 0) {
+            OpenSell(m_symbol_Base,lot_size);
+        }
+    }
+}
+//+------------------------------------------------------------------+
+//| Open Buy position                                                |
+//+------------------------------------------------------------------+
+ulong OpenBuy(CSymbolInfo &symbol, double lotsize, string cmt="")
+{
+    double check_open_long_lot=lotsize;
+//--- check volume before OrderSend to avoid "not enough money" error (CTrade)
+    double check_volume_lot=m_trade.CheckVolume(symbol.Name(),check_open_long_lot,symbol.Ask(),ORDER_TYPE_BUY);
+
+    int digits = (int)SymbolInfoInteger(symbol.Name(),SYMBOL_DIGITS);
+    double price = symbol.Ask();
+    double tp = NormalizeDouble(price + TP_RETURN*price,digits);
+    double sl = NormalizeDouble(price - SL_RETURN*price,digits);
+    
+    if(check_volume_lot!=0.0) {
+        if(check_volume_lot>=check_open_long_lot) {
+            for (int i=0; i < MAXTRY; i++) {
+                PrintFormat("Try buy: %dth",i);
+                symbol.RefreshRates();
+                if(m_trade.Buy(check_open_long_lot,symbol.Name(),symbol.Ask(),sl,tp,cmt)) {
+
+                    if(m_trade.ResultDeal()==0) {
+                        Print("#1 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
+                              ", description of result: ",m_trade.ResultRetcodeDescription());
+                        //PrintResult(m_trade,symbol);
+                    } else {
+                        Print("#2 Buy -> true. Result Retcode: ",m_trade.ResultRetcode(),
+                              ", description of result: ",m_trade.ResultRetcodeDescription());
+                        //PrintResult(m_trade,symbol);
+                        return m_trade.ResultOrder();
+                        break;
+                    }
+                }
+
+                else {
+                    Print("#3 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
+                          ", description of result: ",m_trade.ResultRetcodeDescription());
+                    //PrintResult(m_trade,symbol);
+                }
+                Sleep(SLEEP_MS);
+            }
+        } else {
+            Print(__FUNCTION__,", ERROR: method CheckVolume (",DoubleToString(check_volume_lot,2),") ",
+                  "< \"Lots\" (",DoubleToString(check_open_long_lot,2),")");
+            return 0;
+        }
+    } else {
+        Print(__FUNCTION__,", ERROR: method CheckVolume returned the value of \"0.0\"");
+        return 0;
+    }
+//---r
+   return 0;
+}
+
+//+------------------------------------------------------------------+
+//| Open Sell position                                               |
+//+------------------------------------------------------------------+
+ulong OpenSell(CSymbolInfo &symbol,double lotsize, string cmt="")
+{
+    double check_open_short_lot=lotsize;
+//--- check volume before OrderSend to avoid "not enough money" error (CTrade)
+    double check_volume_lot=m_trade.CheckVolume(symbol.Name(),check_open_short_lot,symbol.Bid(),ORDER_TYPE_SELL);
+
+    int digits = (int)SymbolInfoInteger(symbol.Name(),SYMBOL_DIGITS);
+    double price = symbol.Bid();
+    double pv = SymbolInfoDouble(symbol.Name(),SYMBOL_TRADE_TICK_VALUE) * SymbolInfoDouble(symbol.Name(),SYMBOL_POINT);
+    double tp = NormalizeDouble(price - TP_RETURN*price,digits);
+    double sl = NormalizeDouble(price + SL_RETURN*price,digits);
+
+    if(check_volume_lot!=0.0) {
+        if(check_volume_lot>=check_open_short_lot) {
+            for (int i=0; i < MAXTRY; i++) {
+                PrintFormat("Try sell: %dth",i);
+                symbol.RefreshRates();
+                if(m_trade.Sell(check_open_short_lot,symbol.Name(),symbol.Bid(),sl,tp,cmt)) {
+
+                    if(m_trade.ResultDeal()==0) {
+                        Print("#1 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
+                              ", description of result: ",m_trade.ResultRetcodeDescription());
+                        //PrintResult(m_trade,symbol);
+                    } else {
+                        Print("#2 Sell -> true. Result Retcode: ",m_trade.ResultRetcode(),
+                              ", description of result: ",m_trade.ResultRetcodeDescription());
+                        //PrintResult(m_trade,symbol);
+                        return m_trade.ResultOrder();
+                        break;
+                    }
+                } else {
+                    Print("#3 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
+                          ", description of result: ",m_trade.ResultRetcodeDescription());
+                    //PrintResult(m_trade,symbol);
+                }
+                Sleep(SLEEP_MS);
+            }
+        } else {
+            Print(__FUNCTION__,", ERROR: method CheckVolume (",DoubleToString(check_volume_lot,2),") ",
+                  "< \"Lots\" (",DoubleToString(check_open_short_lot,2),")");
+            return 0;
+        }
+    } else {
+        Print(__FUNCTION__,", ERROR: method CheckVolume returned the value of \"0.0\"");
+        return 0;
+    }
+//---
+   return 0;
+}
+
+void closeAllPos()
+{
+   while (PositionsTotal()>0) {
+      for (int i = PositionsTotal()-1; i>=0; i--) {
+         if (m_position.SelectByIndex(i)) {
+               ulong ticket = m_position.Ticket();
+               m_trade.PositionClose(ticket);
+         }
+      }
+   }
 }
