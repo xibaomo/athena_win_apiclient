@@ -46,6 +46,8 @@ ulong m_slippage = 30;
 string g_all_syms[];
 int    g_num_syms;
 int    g_pos_types[20];
+CharArray g_trade_syms;
+int       g_num_trade_syms;
 
 
 CPositionInfo  m_position;                   // trade position object
@@ -106,8 +108,8 @@ void OnTick()
     if(isQuoteTime() && PositionsTotal() == 0) {
        double asks[];
        double bids[];
-       CharArray trade_syms;
-       int num_trade_syms;
+       //CharArray trade_syms;
+       //int num_trade_syms;
        datetime time_0 = iTime(NULL,QUOTE_PERIOD,0);
        string timestr = TimeToString(time_0);
        ArrayResize(asks,g_num_syms);
@@ -124,21 +126,24 @@ void OnTick()
             asks[i] = m_symbol_Base.Ask();
             bids[i] = m_symbol_Base.Bid();
        }
-       glp_send_new_quotes(asks,bids,g_num_syms,timestr,trade_syms,num_trade_syms,g_pos_types);
+       glp_send_new_quotes(asks,bids,g_num_syms,timestr,g_trade_syms,g_num_trade_syms,g_pos_types);
        ArrayFree(asks);
        ArrayFree(bids);
-       if(num_trade_syms==0) {
+       if(g_num_trade_syms==0) {
          Print("No action");
          return;
        }
-       place_positions(trade_syms,num_trade_syms);
+       place_positions(g_trade_syms,g_num_trade_syms);
        glp_get_loop();
     }// end of quote time
     
     if(isCheckPosTime() && PositionsTotal() > 0) {
-        int np = PositionsTotal();
-        for(int i=0; i < np; i++) {
-            string symbol = PositionGetSymbol(i);
+       int offset = 7;
+       int pos = 0;
+       for (int i=0; i < g_num_trade_syms; i++) {
+           string symbol = CharArrayToString(g_trade_syms.a,pos,offset);
+           pos+=offset;
+           
             double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
             double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
             PrintFormat("sym: %s, ask: %f, bid: %f",symbol,ask,bid);

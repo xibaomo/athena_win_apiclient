@@ -729,6 +729,7 @@ __declspec(dllexport) int __stdcall glp_send_new_quotes(real64* ask, real64* bid
     if (nsyms == 0)
         return 0;
 
+    memset(trade_syms.a,0,BUFLEN);
     char* p = (char*)backmsg.getChar();
     int pos = 0;
     for(int i =0; i < nsyms; i++){
