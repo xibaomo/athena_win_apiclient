@@ -430,10 +430,10 @@ __declspec(dllexport) int __stdcall athena_finish()
 {
     auto& msger = WinMessenger::getInstance();
 
-    String cmt = packAllPosInfo();
-    Message m1(FXAct::ALL_POS_INFO,cmt);
-
-    msger.sendAMsgNoFeedback(m1);
+//    String cmt = packAllPosInfo();
+//    Message m1(FXAct::ALL_POS_INFO,cmt);
+//
+//    msger.sendAMsgNoFeedback(m1);
 
     Message msg(1);
     msg.setAction((ActionType)MsgAct::NORMAL_EXIT);
@@ -685,7 +685,7 @@ __declspec(dllexport) int __stdcall sendAllSymOpen(real64* data, int len, CharAr
     return 0;
 }
 
-__declspec(dllexport) int __stdcall request_all_syms(CharArray& arr, int& nsyms) {
+__declspec(dllexport) int __stdcall glp_request_all_syms(CharArray& arr, int& nsyms) {
     Message msg(1);
     msg.setAction(FXAct::GLP_ALL_SYMS);
     auto& msger = WinMessenger::getInstance();
@@ -706,6 +706,150 @@ __declspec(dllexport) int __stdcall request_all_syms(CharArray& arr, int& nsyms)
       p+=offset;
     }
 
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall glp_send_new_quotes(real64* ask, real64* bid, int len,wchar_t* time_str, CharArray& trade_syms, int& nsyms, int* pos_types){
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,time_str,DEFAULT_BUFLEN);
+    String tstr = String(ts);
+
+    SerializePack pack;
+    pack.real64_vec.assign(ask,ask+len);
+    pack.real64_vec1.assign(bid,bid+len);
+    pack.str_vec.push_back(tstr);
+    String cmt = serialize(pack);
+    Message msg(FXAct::GLP_NEW_QUOTE,cmt);
+
+    auto& msger = WinMessenger::getInstance();
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
+
+    size_t offset=7;
+    nsyms = backmsg.getCharBytes()/offset;
+    if (nsyms == 0)
+        return 0;
+
+    char* p = (char*)backmsg.getChar();
+    int pos = 0;
+    for(int i =0; i < nsyms; i++){
+      // Copy each string
+      strcpy(trade_syms.a + pos, p);
+
+      // Move position by length of string + 1 for null terminator
+      pos += offset;
+      p+=offset;
+    }
+
+    int* pt = (int*)backmsg.getData();
+    for(int i=0; i < nsyms; i++) {
+        pos_types[i] = pt[i];
+    }
+
+    return 0;
+}
+
+class GraphloopCal{
+private:
+    std::map<String,std::pair<double,double>> m_sym2price;
+    std::vector<String> m_loop;
+    GraphloopCal(){;}
+public:
+
+    static GraphloopCal& getInstance() {
+        static GraphloopCal _ins;
+        return _ins;
+    }
+
+    std::map<String,std::pair<double,double>>& getSymPrice() { return m_sym2price; }
+
+    void addSymPrice(const String& sym, double ask, double bid) {
+        m_sym2price[sym] = std::pair<double,double>(ask,bid);
+    }
+
+    std::vector<String>& getLoop() { return m_loop;}
+    void addPath(char* path, int num_nodes) {
+        int offset = 4;
+        for(int i=0; i < num_nodes; i++) {
+            String tmp(path,offset);
+            m_loop.push_back(tmp);
+            path += offset;
+        }
+    }
+
+//    double getWeight(const String& src, const String& dst) {
+//        try {
+//            String sym = src+dst;
+//            double price = m_sym2price.at(sym);
+//            return std::log(price);
+//        } catch(...) {
+//            String sym = dst+src;
+//            double price = m_sym2price[sym];
+//            return -std::log(price);
+//        }
+//    }
+
+    void clear() {
+        m_sym2price.clear();
+        m_loop.clear();
+    }
+};
+
+__declspec(dllexport) int __stdcall glp_get_loop() {
+    Message msg(1);
+    msg.setAction(FXAct::GLP_GET_LOOP);
+    auto& msger = WinMessenger::getInstance();
+
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
+
+    size_t offset=4;
+    int num_nodes = backmsg.getCharBytes()/offset;
+
+    GraphloopCal::getInstance().addPath((char*)backmsg.getChar(),num_nodes);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall glp_add_sym_price(wchar_t* sym, double ask, double bid){
+    char ts[DEFAULT_BUFLEN];
+    std::wcstombs(ts,sym,DEFAULT_BUFLEN);
+    String tstr = String(ts);
+
+    GraphloopCal::getInstance().addSymPrice(tstr,ask,bid);
+    return 0;
+}
+
+__declspec(dllexport) int __stdcall glp_compute_loop_return(double& loop_rtn){
+    auto& glc = GraphloopCal::getInstance();
+
+    SerializePack pack;
+    for (auto& it : glc.getSymPrice()) {
+        pack.str_vec.push_back(it.first);
+        pack.real64_vec.push_back(it.second.first);
+        pack.real64_vec1.push_back(it.second.second);
+    }
+
+    String cmt = serialize(pack);
+    Message msg(FXAct::GLP_LOOP_RTN,cmt);
+    auto& msger = WinMessenger::getInstance();
+    Message backmsg = msger.sendAMsgWaitFeedback(msg);
+
+    real64* pv = (real64*)backmsg.getData();
+    loop_rtn = pv[0];
+
+    return 0;
+}
+__declspec(dllexport) int __stdcall glp_clear_loop() {
+    GraphloopCal::getInstance().clear();
+    Message msg(1);
+    msg.setAction(FXAct::GLP_CLEAR_LOOP);
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
+    return 0;
+}
+__declspec(dllexport) int __stdcall glp_finish(){
+    Message msg(1);
+    msg.setAction(FXAct::GLP_FINISH);
+    auto& msger = WinMessenger::getInstance();
+    msger.sendAMsgNoFeedback(msg);
     return 0;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////

@@ -19,11 +19,12 @@ struct CharArray {
 #import "athena_win_apiclient.dll"
 int athena_init(string symbol, string hostip, string port);
 int glp_request_all_syms(CharArray& arr, int& nsyms);
-int glp_send_new_quotes(double& arr[], int len, string tms, CharArray&, int&, int& pos[]);
+int glp_send_new_quotes(double& asks[], double& bids[], int len, string tms, CharArray&, int&, int& pos[]);
 int glp_get_loop();
-int glp_add_sym_price(string sym, double price);
+int glp_add_sym_price(string sym, double ask, double bid);
 int glp_compute_loop_return(double& loop_rtn);
 int glp_clear_loop();
+int glp_finish();
 int athena_finish();
 #import
 
@@ -40,7 +41,7 @@ string port      = "8888";
 sinput ulong  m_magic   = 2512554564564;
 string sym_x = "EURUSD";
 double lot_size   = 0.2;
-ulong m_slippage = 10;
+ulong m_slippage = 30;
 
 string g_all_syms[];
 int    g_num_syms;
@@ -92,6 +93,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
+   glp_finish();
    athena_finish();
     Print("athena_finish called");
   }
@@ -102,12 +104,14 @@ void OnTick()
   {
 //---
     if(isQuoteTime() && PositionsTotal() == 0) {
-       double prices[];
+       double asks[];
+       double bids[];
        CharArray trade_syms;
        int num_trade_syms;
        datetime time_0 = iTime(NULL,QUOTE_PERIOD,0);
        string timestr = TimeToString(time_0);
-       ArrayResize(prices,g_num_syms);
+       ArrayResize(asks,g_num_syms);
+       ArrayResize(bids,g_num_syms);
        for(int i=0; i < g_num_syms; i++) {
             if (!m_symbol_Base.Name(g_all_syms[i])) {
                PrintFormat("ERROR! Failed to set symbol: %s",g_all_syms[i]);
@@ -117,10 +121,12 @@ void OnTick()
                Print("Failed to refresh rates\n");
                return;
             }
-            prices[i] = m_symbol_Base.Bid();
+            asks[i] = m_symbol_Base.Ask();
+            bids[i] = m_symbol_Base.Bid();
        }
-       glp_send_new_quotes(prices,g_num_syms,timestr,trade_syms,num_trade_syms,g_pos_types);
-       ArrayFree(prices);
+       glp_send_new_quotes(asks,bids,g_num_syms,timestr,trade_syms,num_trade_syms,g_pos_types);
+       ArrayFree(asks);
+       ArrayFree(bids);
        if(num_trade_syms==0) {
          Print("No action");
          return;
@@ -133,13 +139,14 @@ void OnTick()
         int np = PositionsTotal();
         for(int i=0; i < np; i++) {
             string symbol = PositionGetSymbol(i);
-            double bidPrice = SymbolInfoDouble(symbol, SYMBOL_BID);
-            PrintFormat("sym: %s, price: %f",symbol,bidPrice);
-            glp_add_sym_price(symbol,bidPrice);
+            double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
+            double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
+            PrintFormat("sym: %s, ask: %f, bid: %f",symbol,ask,bid);
+            glp_add_sym_price(symbol,ask,bid);
         }
         double loop_rtn;
         glp_compute_loop_return(loop_rtn);
-        if(loop_rtn < 0.0003) {
+        if(loop_rtn < 0.00) {
             closeAllPos();
             glp_clear_loop();
         } 
