@@ -19,7 +19,7 @@ struct CharArray {
 #import "athena_win_apiclient.dll"
 int athena_init(string symbol, string hostip, string port);
 int glp_request_all_syms(CharArray& arr, int& nsyms);
-int glp_send_new_quotes(double& asks[], double& bids[], int len, string tms, CharArray&, int&, int& pos[]);
+int glp_send_new_quotes(double& asks[], double& bids[], int len, string tms, CharArray&, int&, double& prices[], double& lots[], int& pos[]);
 int glp_get_loop();
 int glp_add_sym_price(string sym, double ask, double bid);
 int glp_compute_loop_return(double& loop_rtn);
@@ -30,22 +30,25 @@ int athena_finish();
 
 #define QUOTE_PERIOD PERIOD_M5
 #define CHECKPOS_PERIOD PERIOD_M1
-#define MAXTRY 3
-#define SLEEP_MS 10000
+#define MAXTRY 100
+#define SLEEP_MS 1
 
-double TP_RETURN = 0.01f;
-double SL_RETURN = 0.01f;
+double TP_RETURN = 0.2f;
+double SL_RETURN = 0.2f;
+double MAX_OFFSET= 0.001f;
 string timeBound = "2023.2.28 23:10";
 string hostip    = "192.168.150.67";
 string port      = "8888";
 sinput ulong  m_magic   = 2512554564564;
 string sym_x = "EURUSD";
-double lot_size   = 0.2;
-ulong m_slippage = 30;
+double base_lot   = 0.2;
+ulong m_slippage = 50;
 
 string g_all_syms[];
-int    g_num_syms;
+int    g_num_syms; // all syms
 int    g_pos_types[20];
+double g_pos_prices[20];
+double g_pos_lots[20];
 CharArray g_trade_syms;
 int       g_num_trade_syms;
 
@@ -126,15 +129,19 @@ void OnTick()
             asks[i] = m_symbol_Base.Ask();
             bids[i] = m_symbol_Base.Bid();
        }
-       glp_send_new_quotes(asks,bids,g_num_syms,timestr,g_trade_syms,g_num_trade_syms,g_pos_types);
+       glp_send_new_quotes(asks,bids,g_num_syms,timestr,g_trade_syms,g_num_trade_syms,g_pos_prices, g_pos_lots, g_pos_types);
        ArrayFree(asks);
        ArrayFree(bids);
        if(g_num_trade_syms==0) {
          Print("No action");
          return;
        }
+       if (!small_price_offset(g_trade_syms,g_num_trade_syms,0.001))
+         return;
        place_positions(g_trade_syms,g_num_trade_syms);
        glp_get_loop();
+       double loop_rtn = compute_position_loop_rtn(POSITION_PRICE_OPEN);
+       PrintFormat("open rtn of loop: %f",loop_rtn);
     }// end of quote time
     
     if(isCheckPosTime() && PositionsTotal() > 0) {
@@ -146,12 +153,12 @@ void OnTick()
            
             double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
             double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
-            PrintFormat("sym: %s, ask: %f, bid: %f",symbol,ask,bid);
+            //PrintFormat("sym: %s, ask: %f, bid: %f",symbol,ask,bid);
             glp_add_sym_price(symbol,ask,bid);
         }
-        double loop_rtn;
-        glp_compute_loop_return(loop_rtn);
-        if(loop_rtn < 0.00) {
+        double loop_rtn = compute_position_loop_rtn(POSITION_PRICE_CURRENT);
+        if(loop_rtn > 0.0001) {
+            double loop_rtn = compute_position_loop_rtn(POSITION_PRICE_CURRENT);
             closeAllPos();
             glp_clear_loop();
         } 
@@ -216,6 +223,27 @@ bool isCheckPosTime() {
    return true;
 }
 
+bool small_price_offset(CharArray& trade_syms, int num, double cutoff) {
+   int offset = 7;
+    int pos = 0;
+    for (int i=0; i < num; i++) {
+        string tmp = CharArrayToString(trade_syms.a,pos,offset);
+        pos+=offset;
+        CSymbolInfo symbol;
+        symbol.Name(tmp);
+        symbol.RefreshRates();
+        double price;
+        if(g_pos_types[i] > 0)
+            price = symbol.Ask();
+        else 
+            price = symbol.Bid();
+        
+        if (MathAbs(MathLog(price/g_pos_prices[i])) > cutoff)
+            return false;
+     }
+     return true;
+}
+
 void place_positions(CharArray& trade_syms, int num) {
     int offset = 7;
     int pos = 0;
@@ -230,25 +258,27 @@ void place_positions(CharArray& trade_syms, int num) {
             Print("Failed to refresh rates\n");
             return;
         }
-        
+        double lot_size = base_lot*g_pos_lots[i];
+        lot_size = NormalizeDouble(lot_size,2);
         if (g_pos_types[i] > 0) {
-            OpenBuy(m_symbol_Base,lot_size);
+            OpenBuy(m_symbol_Base,g_pos_prices[i],lot_size);
         }
         if (g_pos_types[i] < 0) {
-            OpenSell(m_symbol_Base,lot_size);
+            OpenSell(m_symbol_Base,g_pos_prices[i],lot_size);
         }
     }
 }
 //+------------------------------------------------------------------+
 //| Open Buy position                                                |
 //+------------------------------------------------------------------+
-ulong OpenBuy(CSymbolInfo &symbol, double lotsize, string cmt="")
+ulong OpenBuy(CSymbolInfo &symbol, double price0, double lotsize, string cmt="")
 {
     double check_open_long_lot=lotsize;
 //--- check volume before OrderSend to avoid "not enough money" error (CTrade)
     double check_volume_lot=m_trade.CheckVolume(symbol.Name(),check_open_long_lot,symbol.Ask(),ORDER_TYPE_BUY);
 
     int digits = (int)SymbolInfoInteger(symbol.Name(),SYMBOL_DIGITS);
+    symbol.RefreshRates();
     double price = symbol.Ask();
     double tp = NormalizeDouble(price + TP_RETURN*price,digits);
     double sl = NormalizeDouble(price - SL_RETURN*price,digits);
@@ -258,7 +288,9 @@ ulong OpenBuy(CSymbolInfo &symbol, double lotsize, string cmt="")
             for (int i=0; i < MAXTRY; i++) {
                 PrintFormat("Try buy: %dth",i);
                 symbol.RefreshRates();
-                if(m_trade.Buy(check_open_long_lot,symbol.Name(),symbol.Ask(),sl,tp,cmt)) {
+                if (MathAbs(MathLog(symbol.Ask()/price)) < MAX_OFFSET)
+                    price = symbol.Ask();
+                if(m_trade.Buy(check_open_long_lot,symbol.Name(),price,sl,tp,cmt)) {
 
                     if(m_trade.ResultDeal()==0) {
                         Print("#1 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
@@ -276,6 +308,8 @@ ulong OpenBuy(CSymbolInfo &symbol, double lotsize, string cmt="")
                 else {
                     Print("#3 Buy -> false. Result Retcode: ",m_trade.ResultRetcode(),
                           ", description of result: ",m_trade.ResultRetcodeDescription());
+                    Print("current ask/bid: ",m_trade.ResultAsk(),"," ,m_trade.ResultBid());
+                    
                     //PrintResult(m_trade,symbol);
                 }
                 Sleep(SLEEP_MS);
@@ -296,15 +330,16 @@ ulong OpenBuy(CSymbolInfo &symbol, double lotsize, string cmt="")
 //+------------------------------------------------------------------+
 //| Open Sell position                                               |
 //+------------------------------------------------------------------+
-ulong OpenSell(CSymbolInfo &symbol,double lotsize, string cmt="")
+ulong OpenSell(CSymbolInfo &symbol,double price0, double lotsize, string cmt="")
 {
     double check_open_short_lot=lotsize;
 //--- check volume before OrderSend to avoid "not enough money" error (CTrade)
     double check_volume_lot=m_trade.CheckVolume(symbol.Name(),check_open_short_lot,symbol.Bid(),ORDER_TYPE_SELL);
 
     int digits = (int)SymbolInfoInteger(symbol.Name(),SYMBOL_DIGITS);
+    symbol.RefreshRates();
     double price = symbol.Bid();
-    double pv = SymbolInfoDouble(symbol.Name(),SYMBOL_TRADE_TICK_VALUE) * SymbolInfoDouble(symbol.Name(),SYMBOL_POINT);
+    //double pv = SymbolInfoDouble(symbol.Name(),SYMBOL_TRADE_TICK_VALUE) * SymbolInfoDouble(symbol.Name(),SYMBOL_POINT);
     double tp = NormalizeDouble(price - TP_RETURN*price,digits);
     double sl = NormalizeDouble(price + SL_RETURN*price,digits);
 
@@ -312,8 +347,12 @@ ulong OpenSell(CSymbolInfo &symbol,double lotsize, string cmt="")
         if(check_volume_lot>=check_open_short_lot) {
             for (int i=0; i < MAXTRY; i++) {
                 PrintFormat("Try sell: %dth",i);
-                symbol.RefreshRates();
-                if(m_trade.Sell(check_open_short_lot,symbol.Name(),symbol.Bid(),sl,tp,cmt)) {
+                symbol.RefreshRates();//---
+                //if (symbol.Bid() > price)
+                if (MathAbs(MathLog(symbol.Bid()/price)) < MAX_OFFSET)
+                    price = symbol.Bid();
+                
+                if(m_trade.Sell(check_open_short_lot,symbol.Name(),price,sl,tp,cmt)) {
 
                     if(m_trade.ResultDeal()==0) {
                         Print("#1 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
@@ -329,6 +368,8 @@ ulong OpenSell(CSymbolInfo &symbol,double lotsize, string cmt="")
                 } else {
                     Print("#3 Sell -> false. Result Retcode: ",m_trade.ResultRetcode(),
                           ", description of result: ",m_trade.ResultRetcodeDescription());
+                    Print("current ask/bid: ",m_trade.ResultAsk(),"," ,m_trade.ResultBid());
+                    
                     //PrintResult(m_trade,symbol);
                 }
                 Sleep(SLEEP_MS);
@@ -356,4 +397,52 @@ void closeAllPos()
          }
       }
    }
+}
+
+double total_profit(){
+   double totalProfit = 0;
+   
+   // Loop through all positions
+   for(int i=PositionsTotal()-1; i>=0; i--)
+     {
+      ulong ticket = PositionGetTicket(i);
+      
+      // Get position details
+      string symbol = PositionGetSymbol(i);
+      //double volume = PositionGetDouble(POSITION_VOLUME);
+      
+      
+      double pf = PositionGetDouble(POSITION_PROFIT);
+      totalProfit += pf;
+     }
+     
+   return totalProfit;
+}
+
+double compute_position_loop_rtn(ENUM_POSITION_PROPERTY_DOUBLE tp) {
+   double rtn = 0.;
+   double tmp;
+   for(int i=PositionsTotal()-1; i>=0; i--)
+     {
+      ulong ticket = PositionGetTicket(i);
+      
+      // Get position details
+      string symbol = PositionGetSymbol(i);
+      int digits = (int)SymbolInfoInteger(symbol,SYMBOL_DIGITS);
+
+      ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+      
+      double p = PositionGetDouble(tp);
+      p = NormalizeDouble(p,digits);
+      
+      if (posType == POSITION_TYPE_BUY){
+         tmp = MathLog(p);
+      }
+      if (posType == POSITION_TYPE_SELL){
+         tmp = -MathLog(p);
+      }
+      rtn+=tmp;
+     }
+     
+     return rtn;
 }

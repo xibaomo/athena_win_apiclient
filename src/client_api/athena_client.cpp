@@ -709,7 +709,7 @@ __declspec(dllexport) int __stdcall glp_request_all_syms(CharArray& arr, int& ns
     return 0;
 }
 
-__declspec(dllexport) int __stdcall glp_send_new_quotes(real64* ask, real64* bid, int len,wchar_t* time_str, CharArray& trade_syms, int& nsyms, int* pos_types){
+__declspec(dllexport) int __stdcall glp_send_new_quotes(real64* ask, real64* bid, int len,wchar_t* time_str, CharArray& trade_syms, int& nsyms, double* prices, double* lots, int* pos_types){
     char ts[DEFAULT_BUFLEN];
     std::wcstombs(ts,time_str,DEFAULT_BUFLEN);
     String tstr = String(ts);
@@ -741,9 +741,15 @@ __declspec(dllexport) int __stdcall glp_send_new_quotes(real64* ask, real64* bid
       p+=offset;
     }
 
-    int* pt = (int*)backmsg.getData();
+    memset(prices,0,sizeof(double)*nsyms);
+    memset(lots, 0, sizeof(double)*nsyms);
+    memset(pos_types,0,sizeof(int)*nsyms);
+    real64* pv = (real64*)backmsg.getData();
+    size_t pt = 0;
     for(int i=0; i < nsyms; i++) {
-        pos_types[i] = pt[i];
+        prices[i] = pv[pt++];
+        lots[i]   = pv[pt++];
+        pos_types[i] = pv[pt++];
     }
 
     return 0;
