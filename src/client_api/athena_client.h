@@ -99,6 +99,8 @@ __declspec(dllexport) int __stdcall glp_request_all_syms(CharArray& arr, int& ns
 __declspec(dllexport) int __stdcall glp_send_new_quotes(real64* ask, real64* bid, int len, wchar_t* time_str, CharArray& trade_syms, int& nsyms, double* price, double* lot, int* pos_types);
 __declspec(dllexport) int __stdcall glp_get_loop();
 __declspec(dllexport) int __stdcall glp_add_sym_price(wchar_t* sym, double ask, double bid);
+__declspec(dllexport) int __stdcall glp_add_profit(double profit);
+__declspec(dllexport) double __stdcall glp_get_profit_mean();
 __declspec(dllexport) int __stdcall glp_compute_loop_return(double& loop_return);
 __declspec(dllexport) int __stdcall glp_clear_loop();
 __declspec(dllexport) int __stdcall glp_finish();

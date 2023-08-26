@@ -9,6 +9,7 @@
 #include <vector>
 #include <locale>
 #include <codecvt>
+#include <numeric>
 #include <iostream>
 #include "athena_client.h"
 #include "win_messenger/msg.h"
@@ -759,9 +760,9 @@ class GraphloopCal{
 private:
     std::map<String,std::pair<double,double>> m_sym2price;
     std::vector<String> m_loop;
+    std::vector<double> m_profits;
     GraphloopCal(){;}
 public:
-
     static GraphloopCal& getInstance() {
         static GraphloopCal _ins;
         return _ins;
@@ -774,6 +775,7 @@ public:
     }
 
     std::vector<String>& getLoop() { return m_loop;}
+    std::vector<double>& getProfits() { return m_profits; }
     void addPath(char* path, int num_nodes) {
         int offset = 4;
         for(int i=0; i < num_nodes; i++) {
@@ -783,23 +785,29 @@ public:
         }
     }
 
-//    double getWeight(const String& src, const String& dst) {
-//        try {
-//            String sym = src+dst;
-//            double price = m_sym2price.at(sym);
-//            return std::log(price);
-//        } catch(...) {
-//            String sym = dst+src;
-//            double price = m_sym2price[sym];
-//            return -std::log(price);
-//        }
-//    }
-
+    void addProfit(double p) {
+        m_profits.push_back(p);
+    }
     void clear() {
         m_sym2price.clear();
         m_loop.clear();
+        m_profits.clear();
     }
 };
+
+__declspec(dllexport) int __stdcall glp_add_profit(double profit) {
+    GraphloopCal::getInstance().addProfit(profit);
+    return 0;
+}
+
+__declspec(dllexport) double __stdcall glp_get_profit_mean(){
+    auto& v = GraphloopCal::getInstance().getProfits();
+    if(v.empty()) return -1.;
+
+    double s = std::accumulate(v.begin(),v.end(),0.);
+    double mean =  s/v.size();
+    return mean;
+}
 
 __declspec(dllexport) int __stdcall glp_get_loop() {
     Message msg(1);

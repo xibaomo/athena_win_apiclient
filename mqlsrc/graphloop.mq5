@@ -23,6 +23,8 @@ int glp_send_new_quotes(double& asks[], double& bids[], int len, string tms, Cha
 int glp_get_loop();
 int glp_add_sym_price(string sym, double ask, double bid);
 int glp_compute_loop_return(double& loop_rtn);
+int glp_add_profit(double);
+double glp_get_profit_mean();
 int glp_clear_loop();
 int glp_finish();
 int athena_finish();
@@ -30,8 +32,8 @@ int athena_finish();
 
 #define QUOTE_PERIOD PERIOD_M5
 #define CHECKPOS_PERIOD PERIOD_M1
-#define MAXTRY 100
-#define SLEEP_MS 1
+#define MAXTRY 1000
+#define SLEEP_MS 200
 
 double TP_RETURN = 0.2f;
 double SL_RETURN = 0.2f;
@@ -51,7 +53,10 @@ double g_pos_prices[20];
 double g_pos_lots[20];
 CharArray g_trade_syms;
 int       g_num_trade_syms;
+double g_max_profit=-9999.;
+double g_min_profit = 9999.;
 
+double max_loop_rtn = -999.;
 
 CPositionInfo  m_position;                   // trade position object
 CTrade         m_trade;                      // trading object
@@ -98,6 +103,9 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
+   PrintFormat("profit: min: %.2f, max: %.2f",g_min_profit,g_max_profit);
+   double mean_profit=glp_get_profit_mean();
+   PrintFormat("Mean profit: %.2f",mean_profit);
    glp_finish();
    athena_finish();
     Print("athena_finish called");
@@ -108,6 +116,11 @@ void OnDeinit(const int reason)
 void OnTick()
   {
 //---
+    MqlDateTime mdt;
+    TimeToStruct(TimeCurrent(),mdt);
+    int currentHour = mdt.hour;
+    if (currentHour >= 23 || currentHour <= 3) return;
+    
     if(isQuoteTime() && PositionsTotal() == 0) {
        double asks[];
        double bids[];
@@ -141,7 +154,7 @@ void OnTick()
        place_positions(g_trade_syms,g_num_trade_syms);
        glp_get_loop();
        double loop_rtn = compute_position_loop_rtn(POSITION_PRICE_OPEN);
-       PrintFormat("open rtn of loop: %f",loop_rtn);
+       PrintFormat("open rtn of loop: %e",loop_rtn);
     }// end of quote time
     
     if(isCheckPosTime() && PositionsTotal() > 0) {
@@ -157,11 +170,23 @@ void OnTick()
             glp_add_sym_price(symbol,ask,bid);
         }
         double loop_rtn = compute_position_loop_rtn(POSITION_PRICE_CURRENT);
-        if(loop_rtn > 0.0001) {
+        if (loop_rtn > max_loop_rtn) {
+            max_loop_rtn = loop_rtn;
+        }
+        PrintFormat("loop rtn: %e, max: %e",loop_rtn,max_loop_rtn);
+        if(loop_rtn > 1e-1) {
             double loop_rtn = compute_position_loop_rtn(POSITION_PRICE_CURRENT);
+            PrintFormat("close rtn of loop: %f",loop_rtn);
             closeAllPos();
             glp_clear_loop();
         } 
+        
+        double profit = total_profit();
+        glp_add_profit(profit);
+        if (profit < g_min_profit) 
+            g_min_profit = profit;
+        if (profit > g_max_profit)
+            g_max_profit = profit;
     } // end of check open positions
  }
 //+------------------------------------------------------------------+
@@ -237,8 +262,8 @@ bool small_price_offset(CharArray& trade_syms, int num, double cutoff) {
             price = symbol.Ask();
         else 
             price = symbol.Bid();
-        
-        if (MathAbs(MathLog(price/g_pos_prices[i])) > cutoff)
+        double ofs = MathAbs(MathLog(price/g_pos_prices[i]));
+        if (ofs > cutoff)
             return false;
      }
      return true;
@@ -288,7 +313,9 @@ ulong OpenBuy(CSymbolInfo &symbol, double price0, double lotsize, string cmt="")
             for (int i=0; i < MAXTRY; i++) {
                 PrintFormat("Try buy: %dth",i);
                 symbol.RefreshRates();
-                if (MathAbs(MathLog(symbol.Ask()/price)) < MAX_OFFSET)
+                double dev = MathLog(symbol.Ask()/price);
+                PrintFormat("deviation from previous price: %f",dev);
+                if (MathAbs(dev) < MAX_OFFSET)
                     price = symbol.Ask();
                 if(m_trade.Buy(check_open_long_lot,symbol.Name(),price,sl,tp,cmt)) {
 
@@ -349,7 +376,9 @@ ulong OpenSell(CSymbolInfo &symbol,double price0, double lotsize, string cmt="")
                 PrintFormat("Try sell: %dth",i);
                 symbol.RefreshRates();//---
                 //if (symbol.Bid() > price)
-                if (MathAbs(MathLog(symbol.Bid()/price)) < MAX_OFFSET)
+                double dev = MathLog(symbol.Bid()/price);
+                PrintFormat("deviation from previous price: %f",dev);
+                if (MathAbs(dev) < MAX_OFFSET)
                     price = symbol.Bid();
                 
                 if(m_trade.Sell(check_open_short_lot,symbol.Name(),price,sl,tp,cmt)) {
